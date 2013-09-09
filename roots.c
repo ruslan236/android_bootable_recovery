@@ -157,6 +157,23 @@ int try_mount(const char* device, const char* mount_point, const char* fs_type, 
     return ret;
 }
 
+int use_migrated_storage() {
+    const MountedVolume* mv =
+        find_mounted_volume_by_mount_point("/data");
+    if (ensure_path_mounted("/data") != 0)
+        return 0;
+	char get_version[255];
+    property_get("persist.sys.android.version", get_version, "");
+    struct stat s;
+	return strncmp(get_version,"4.2",3) >= 0 && 
+			lstat("/data/media/0", &s) == 0;
+	if (!mv) {
+		ignore_data_media_workaround(1);
+		ensure_path_unmounted("/data");
+		ignore_data_media_workaround(0);
+	}
+}
+
 int is_data_media() {
     int i;
     int has_sdcard = 0;
@@ -183,9 +200,15 @@ void setup_data_media() {
             break;
         }
     }
+    // support /data/media/0
+    char path[15];
+    if (use_migrated_storage())
+        sprintf(path, "/data/media/0");
+    else sprintf(path, "/data/media");
+
     rmdir(mount_point);
-    mkdir("/data/media", 0755);
-    symlink("/data/media", mount_point);
+    mkdir(path, 0755);
+    symlink(path, mount_point);
 }
 
 int is_data_media_volume_path(const char* path) {
@@ -207,7 +230,9 @@ int ensure_path_mounted(const char* path) {
 int ensure_path_mounted_at_mount_point(const char* path, const char* mount_point) {
     if (is_data_media_volume_path(path)) {
         if (ui_should_log_stdout()) {
-            LOGI("using /data/media for %s.\n", path);
+            if (use_migrated_storage())
+			    LOGI("using /data/media/0 for %s.\n", path);
+		    else LOGI("using /data/media for %s.\n", path);
         }
         int ret;
         if (0 != (ret = ensure_path_mounted("/data")))
@@ -272,7 +297,12 @@ int ensure_path_mounted_at_mount_point(const char* path, const char* mount_point
     } else {
         // let's try mounting with the mount binary and hope for the best.
         char mount_cmd[PATH_MAX];
-        sprintf(mount_cmd, "mount %s", mount_point);
+        // case called by ensure_path_mounted_at_mount_point("/emmc", "/sdcard") in edifyscripting.c
+        // for sdcard marker check on devices where /sdcard is external storage
+        if (strcmp(v->mount_point, mount_point) != 0)
+            sprintf(mount_cmd, "mount %s %s", v->blk_device, mount_point);
+        else
+            sprintf(mount_cmd, "mount %s", mount_point);
         return __system(mount_cmd);
     }
 

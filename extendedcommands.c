@@ -49,7 +49,7 @@
 #include "compact_loki.h"
 #endif
 
-int signature_check_enabled = 1;
+int signature_check_enabled = 0;
 #ifdef ENABLE_LOKI
 int loki_support_enabled = 1;
 #endif
@@ -97,8 +97,8 @@ void write_string_to_file(const char* filename, const char* string) {
 
 void write_recovery_version() {
     char path[PATH_MAX];
-    sprintf(path, "%s%sclockworkmod/.recovery_version", get_primary_storage_path(), (is_data_media() ? "/0/" : "/"));
-    write_string_to_file(path,EXPAND(RECOVERY_VERSION) "\n" EXPAND(TARGET_DEVICE));
+    sprintf(path, "%s/clockworkmod/.recovery_version", get_primary_storage_path());
+	write_string_to_file(path,EXPAND(RECOVERY_VERSION) "\n" EXPAND(TARGET_DEVICE));
 }
 
 void
@@ -720,8 +720,9 @@ int format_unknown_device(const char *device, const char* path, const char *fs_t
 
     static char tmp[PATH_MAX];
     if (strcmp(path, "/data") == 0) {
-        sprintf(tmp, "cd /data ; for f in $(ls -a | grep -v ^media$); do rm -rf $f; done");
-        __system(tmp);
+        //sprintf(tmp, "cd /data ; for f in $(ls -a | grep -v ^media$); do rm -rf $f; done");
+        //__system(tmp);
+		__system("cd /data ; for f in $(ls -a | grep -v '^media$'); do rm -rf \"$f\"; done");
         // if the /data/media sdcard has already been migrated for android 4.2,
         // prevent the migration from happening again by writing the .layout_version
         struct stat st;
@@ -741,9 +742,9 @@ int format_unknown_device(const char *device, const char* path, const char *fs_t
         }
     }
     else {
-        sprintf(tmp, "rm -rf %s/*", path);
+        sprintf(tmp, "rm -rf ""%s/*""", path);
         __system(tmp);
-        sprintf(tmp, "rm -rf %s/.*", path);
+        sprintf(tmp, "rm -rf ""%s/.*""", path);
         __system(tmp);
     }
 
@@ -1167,8 +1168,12 @@ int show_nandroid_menu()
                         // /emmc/clockworkmod/backup/%F.%H.%M.%S (time values are populated too)
                         sprintf(backup_path, "%s/%s", chosen_path, path_fmt);
                     }
-                    nandroid_backup(backup_path);
-                    write_recovery_version();
+					ui_print("to:%s\n", backup_path);
+                    if (confirm_selection( "Confirm backup?", "Yes - Backup"))
+                    {
+						nandroid_backup(backup_path);                    
+						write_recovery_version();
+					}
                 }
                 break;
             case 1:
@@ -1529,6 +1534,7 @@ void create_fstab()
     write_fstab_root("/sdcard", file);
     write_fstab_root("/sd-ext", file);
     write_fstab_root("/external_sd", file);
+	write_fstab_root("/preload", file);
     fclose(file);
     LOGI("Completed outputting fstab.\n");
 }

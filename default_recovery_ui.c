@@ -31,6 +31,15 @@ char* MENU_ITEMS[] = { "reboot system now",
                        "advanced",
                        NULL };
 
+/*char* MENU_ITEMS[] = { "重启设备",
+                       "安装ZIP刷机包",
+                       "清除数据恢复出厂",
+                       "清除Cache分区",
+                       "备份和恢复备份",
+                       "挂载和大容量储存",
+                       "高级选项",
+                       NULL };
+*/
 void device_ui_init(UIParameters* ui_parameters) {
 }
 

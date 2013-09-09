@@ -416,7 +416,11 @@ int nandroid_backup(const char* backup_path)
 
     if (0 != (ret = nandroid_backup_partition(backup_path, "/system")))
         return ret;
-
+	if (volume_for_path("/preload") != NULL)
+	{
+	    if (0 != (ret = nandroid_backup_partition(backup_path, "/preload")))
+        return ret;
+	}
     if (0 != (ret = nandroid_backup_partition(backup_path, "/data")))
         return ret;
 
@@ -670,7 +674,7 @@ int nandroid_restore_partition_extended(const char* backup_path, const char* mou
         }
 
         if (backup_filesystem == NULL || restore_handler == NULL) {
-            ui_print("%s.img not found. Skipping restore of %s.\n", name, mount_point);
+            ui_print("%s file not found. Skipping restore of %s.\n", name, mount_point);
             return 0;
         }
         else {
@@ -825,6 +829,12 @@ int nandroid_restore(const char* backup_path, int restore_boot, int restore_syst
 
     if (restore_system && 0 != (ret = nandroid_restore_partition(backup_path, "/system")))
         return ret;
+
+	if (volume_for_path("/preload") != NULL)
+	{
+	    if (restore_system && 0 != (ret = nandroid_restore_partition(backup_path, "/preload")))
+    	    return ret;	
+	}
 
     if (restore_data && 0 != (ret = nandroid_restore_partition(backup_path, "/data")))
         return ret;
