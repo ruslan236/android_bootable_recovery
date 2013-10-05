@@ -122,9 +122,6 @@ static int menu_top = 0, menu_items = 0, menu_sel = 0;
 static int menu_show_start = 0;             // this is line which menu display is starting at
 static int max_menu_rows;
 
-static int cur_rainbow_color = 0;
-static int gRainbowMode = 0;
-
 // Key event input queue
 static pthread_mutex_t key_queue_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t key_queue_cond = PTHREAD_COND_INITIALIZER;
@@ -133,10 +130,6 @@ static unsigned long key_last_repeat[KEY_MAX + 1], key_press_time[KEY_MAX + 1];
 static volatile char key_pressed[KEY_MAX + 1];
 
 static void update_screen_locked(void);
-
-#ifdef BOARD_TOUCH_RECOVERY
-#include "../../vendor/koush/recovery/touch.c"
-#endif
 
 // Return the current time as a double (including fractions of a second).
 static double now() {
@@ -268,13 +261,10 @@ static void draw_text_line(int row, const char* t, int align) {
         gr_text(col, (row+1)*CHAR_HEIGHT-1, t);
 		//gr_text(col, (row+1)*CHAR_HEIGHT-(CHAR_HEIGHT-BOARD_RECOVERY_CHAR_HEIGHT)/2-1, t);
     }
-    if (t[0] != '\0') {
-    	if (ui_get_rainbow_mode()) ui_rainbow_mode();
-    	gr_text(0, (row+1)*CHAR_HEIGHT-1, t);
-    }
 }
 
-//#define MENU_TEXT_COLOR 255, 160, 49, 255
+//#define MENU_TEXT_COLOR 66, 157, 208, 255
+//#define NORMAL_TEXT_COLOR 34, 117, 175, 255
 #define MENU_TEXT_COLOR 0, 191, 255, 255
 #define NORMAL_TEXT_COLOR 200, 200, 200, 255
 #define HEADER_TEXT_COLOR NORMAL_TEXT_COLOR
@@ -292,32 +282,36 @@ static void draw_screen_locked(void)
         // gr_color(0, 0, 0, 160);
         // gr_fill(0, 0, gr_fb_width(), gr_fb_height());
 
-	gr_surface surface = gVirtualKeys;
+        gr_surface surface = gVirtualKeys;
         int total_rows = (gr_fb_height() - gr_get_height(surface)) / CHAR_HEIGHT;
         int i = 0;
         int j = 0;
-        int row = 0; // current row that we are drawing on
+        int row = 0;            // current row that we are drawing on
         if (show_menu) {
-	    int batt_level = 0;
+            gr_color(MENU_TEXT_COLOR);
+            int batt_level = 0;
             batt_level = get_batt_stats();
             if (batt_level < 21) {
                 gr_color(255, 0, 0, 255);
             }
             
-	    /*struct tm *current;
-	    time_t now;
-	    now = time(NULL); // add 2 hours
-	    current = localtime(&now);*/
+			/*
+			struct tm *current;
+			time_t now;
+			now = time(NULL); // add 2 hours
+			current = localtime(&now);
+			*/
             
             char batt_text[40];
             //sprintf(batt_text, "[%d%% %02D:%02D]", batt_level, current->tm_hour, current->tm_min);
             
             //if (now == NULL) { // just in case
-	    sprintf(batt_text, "[%d%%]", batt_level);
+				sprintf(batt_text, "[%d%%]", batt_level);
+			//}
 
             gr_color(MENU_TEXT_COLOR);
-		draw_text_line(0, batt_text, RIGHT_ALIGN);
-            gr_color(MENU_TEXT_COLOR);
+			draw_text_line(0, batt_text, RIGHT_ALIGN);
+
             gr_fill(0, (menu_top + menu_sel - menu_show_start) * CHAR_HEIGHT,
                     gr_fb_width(), (menu_top + menu_sel - menu_show_start + 1)*CHAR_HEIGHT+1);
 
@@ -365,6 +359,7 @@ static void draw_screen_locked(void)
             draw_text_line(start_row + r, text[(cur_row + r) % MAX_ROWS], LEFT_ALIGN);
         }
     }
+    draw_virtualkeys_locked(); //added to draw the virtual keys
 }
 
 // Redraw everything on the screen and flip the screen (make it visible).
@@ -923,7 +918,8 @@ int ui_start_menu(const char** headers, char** items, int initial_selection) {
     if (text_rows > 0 && text_cols > 0) {
         for (i = 0; i < text_rows; ++i) {
             if (headers[i] == NULL) break;
-	    strncpy(menu[i], headers[i], sizeof(menu[i]));
+            strncpy(menu[i], headers[i], text_cols-1);
+            menu[i][text_cols-1] = '\0';
         }
         menu_top = i;
         for (; i < MENU_MAX_ROWS; ++i) {
@@ -1041,22 +1037,21 @@ void ui_cancel_wait_key() {
 
 extern int volumes_changed();
 
-// delay in seconds to refresh clock and USB plugged volumes
-#define REFRESH_TIME_USB_INTERVAL 5
 int ui_wait_key()
 {
     if (boardEnableKeyRepeat) return ui_wait_key_with_repeat();
     pthread_mutex_lock(&key_queue_mutex);
     int timeouts = UI_WAIT_KEY_TIMEOUT_SEC;
 
-    // Time out after REFRESH_TIME_USB_INTERVAL seconds to catch volume changes, and loop for
+    // Time out after 1 second to catch volume changes, and loop for
     // UI_WAIT_KEY_TIMEOUT_SEC to restart a device not connected to USB
     do {
         struct timeval now;
         struct timespec timeout;
+        gettimeofday(&now, NULL);
         timeout.tv_sec = now.tv_sec;
         timeout.tv_nsec = now.tv_usec * 1000;
-        timeout.tv_sec += REFRESH_TIME_USB_INTERVAL;
+        timeout.tv_sec += 1;
 
         int rc = 0;
         while (key_queue_len == 0 && rc != ETIMEDOUT) {
@@ -1067,8 +1062,8 @@ int ui_wait_key()
                 return REFRESH;
             }
         }
-        timeouts -= REFRESH_TIME_USB_INTERVAL;
-    } while ((timeouts > 0 || usb_connected()) && key_queue_len == 0);
+        timeouts--;
+    } while ((timeouts || usb_connected()) && key_queue_len == 0);
 
     int key = -1;
     if (key_queue_len > 0) {
@@ -1098,31 +1093,21 @@ int ui_wait_key_with_repeat()
 
     // Loop to wait for more keys.
     do {
-        int timeouts = UI_WAIT_KEY_TIMEOUT_SEC;
-        int rc = 0;
         struct timeval now;
         struct timespec timeout;
-        pthread_mutex_lock(&key_queue_mutex);
-        while (key_queue_len == 0 && timeouts > 0) {
-            gettimeofday(&now, NULL);
-            timeout.tv_sec = now.tv_sec;
-            timeout.tv_nsec = now.tv_usec * 1000;
-            timeout.tv_sec += REFRESH_TIME_USB_INTERVAL;
+        gettimeofday(&now, NULL);
+        timeout.tv_sec = now.tv_sec;
+        timeout.tv_nsec = now.tv_usec * 1000;
+        timeout.tv_sec += UI_WAIT_KEY_TIMEOUT_SEC;
 
-            rc = 0;
-            while (key_queue_len == 0 && rc != ETIMEDOUT) {
-                rc = pthread_cond_timedwait(&key_queue_cond, &key_queue_mutex,
-                                            &timeout);
-                if (volumes_changed()) {
-                    pthread_mutex_unlock(&key_queue_mutex);
-                    return REFRESH;
-                }
-            }
-            timeouts -= REFRESH_TIME_USB_INTERVAL;
+        int rc = 0;
+        pthread_mutex_lock(&key_queue_mutex);
+        while (key_queue_len == 0 && rc != ETIMEDOUT) {
+            rc = pthread_cond_timedwait(&key_queue_cond, &key_queue_mutex,
+                                        &timeout);
         }
         pthread_mutex_unlock(&key_queue_mutex);
-
-        if (rc == ETIMEDOUT && !usb_connected()) {
+        if (rc == ETIMEDOUT && !usb_connected() && !volumes_changed()) {
             return -1;
         }
 
@@ -1242,33 +1227,10 @@ void ui_increment_frame() {
         (gInstallingFrame + 1) % ui_parameters.installing_frames;
 }
 
-int ui_get_rainbow_mode() {
-    return gRainbowMode;
-}
-
-void ui_rainbow_mode() {
-    static int colors[] = { 255, 0, 0,        // red
-                            255, 127, 0,      // orange
-                            255, 255, 0,      // yellow
-                            0, 255, 0,        // green
-                            60, 80, 255,      // blue
-                            143, 0, 255 };    // violet
-
-    gr_color(colors[cur_rainbow_color], colors[cur_rainbow_color+1], colors[cur_rainbow_color+2], 255);
-    cur_rainbow_color += 3;
-    if (cur_rainbow_color >= sizeof(colors)/sizeof(colors[0])) cur_rainbow_color = 0;
-}
-
-void ui_set_rainbow_mode(int rainbowMode) {
-    gRainbowMode = rainbowMode;
-
-    pthread_mutex_lock(&gUpdateMutex);
-    update_screen_locked();
-    pthread_mutex_unlock(&gUpdateMutex);
-}
-
 int get_batt_stats(void)
 {
+    static int level = -1;
+
     char value[4];
     FILE * capacity;
     if ( (capacity = fopen("/sys/class/power_supply/battery/capacity","r")) ) {
@@ -1276,7 +1238,7 @@ int get_batt_stats(void)
         fclose(capacity);
     } else if ( (capacity = fopen("/sys/devices/platform/android-battery/power_supply/android-battery/capacity","r")) ) {
         fgets(value, 4, capacity);
-        fclose(capacity);
+        fclose(capacity);    
     }
     level = atoi(value);
     if (level > 100)
@@ -1327,5 +1289,4 @@ int input_buttons()
 	}
     return final_code;
 }
-
 
