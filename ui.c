@@ -923,8 +923,7 @@ int ui_start_menu(const char** headers, char** items, int initial_selection) {
     if (text_rows > 0 && text_cols > 0) {
         for (i = 0; i < text_rows; ++i) {
             if (headers[i] == NULL) break;
-            strncpy(menu[i], headers[i], text_cols-1);
-            menu[i][text_cols-1] = '\0';
+	    strncpy(menu[i], headers[i], sizeof(menu[i]));
         }
         menu_top = i;
         for (; i < MENU_MAX_ROWS; ++i) {
@@ -1270,21 +1269,20 @@ void ui_set_rainbow_mode(int rainbowMode) {
 
 int get_batt_stats(void)
 {
-    static int level = -1;
-
     char value[4];
-    FILE * capacity = fopen("/sys/class/power_supply/battery/capacity","rt");
-    if (capacity)
-    {
+    FILE * capacity;
+    if ( (capacity = fopen("/sys/class/power_supply/battery/capacity","r")) ) {
         fgets(value, 4, capacity);
         fclose(capacity);
-        level = atoi(value);
-
-        if (level > 100)
-            level = 100;
-        if (level < 0)
-            level = 0;
+    } else if ( (capacity = fopen("/sys/devices/platform/android-battery/power_supply/android-battery/capacity","r")) ) {
+        fgets(value, 4, capacity);
+        fclose(capacity);
     }
+    level = atoi(value);
+    if (level > 100)
+        level = 100;
+    if (level < 0)
+        level = 0;
     return level;
 }
 
