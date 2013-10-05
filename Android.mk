@@ -9,7 +9,7 @@ LOCAL_SRC_FILES := \
     bootloader.c \
     install.c \
     roots.c \
-    ui_touch.c \
+    ui.c \
     mounts.c \
     extendedcommands.c \
     nandroid.c \

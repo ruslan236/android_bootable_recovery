@@ -72,6 +72,7 @@ static gr_surface *gProgressBarIndeterminate;
 static gr_surface gProgressBarEmpty;
 static gr_surface gProgressBarFill;
 static gr_surface gBackground;
+static gr_surface gVirtualKeys; // surface for our virtual key buttons
 static int ui_has_initialized = 0;
 static int ui_log_stdout = 1;
 
@@ -88,6 +89,7 @@ static const struct { gr_surface* surface; const char *name; } BITMAPS[] = {
     { &gProgressBarEmpty,               "progress_empty" },
     { &gProgressBarFill,                "progress_fill" },
     { &gBackground,                "stitch" },
+    { &gVirtualKeys,                    "virtual_keys" },
     { NULL,                             NULL },
 };
 
@@ -231,11 +233,45 @@ static void draw_progress_locked()
     }
 }
 
-static void draw_text_line(int row, const char* t) {
-  if (t[0] != '\0') {
-    if (ui_get_rainbow_mode()) ui_rainbow_mode();
-    gr_text(0, (row+1)*CHAR_HEIGHT-1, t);
-  }
+// Draw the virtual keys on the screen.  Does not flip pages.
+// Should only be called with gUpdateMutex locked.
+static void draw_virtualkeys_locked()
+{
+    gr_surface surface = gVirtualKeys;
+    int iconWidth = gr_get_width(surface);
+    int iconHeight = gr_get_height(surface);
+    int iconX = (gr_fb_width() - iconWidth) / 2;
+    int iconY = (gr_fb_height() - iconHeight);
+    gr_blit(surface, 0, 0, iconWidth, iconHeight, iconX, iconY);
+}
+
+#define LEFT_ALIGN 0
+#define CENTER_ALIGN 1
+#define RIGHT_ALIGN 2
+
+static void draw_text_line(int row, const char* t, int align) {
+    int col = 0;
+    if (t[0] != '\0') {
+        int length = strnlen(t, MENU_MAX_COLS) * CHAR_WIDTH;
+        switch(align)
+        {
+            case LEFT_ALIGN:
+                col = 1;
+                break;
+            case CENTER_ALIGN:
+                col = ((gr_fb_width() - length) / 2);
+                break;
+            case RIGHT_ALIGN:
+                col = gr_fb_width() - length - 1;
+                break;
+        }
+        gr_text(col, (row+1)*CHAR_HEIGHT-1, t);
+		//gr_text(col, (row+1)*CHAR_HEIGHT-(CHAR_HEIGHT-BOARD_RECOVERY_CHAR_HEIGHT)/2-1, t);
+    }
+    if (t[0] != '\0') {
+    	if (ui_get_rainbow_mode()) ui_rainbow_mode();
+    	gr_text(0, (row+1)*CHAR_HEIGHT-1, t);
+    }
 }
 
 //#define MENU_TEXT_COLOR 255, 160, 49, 255
@@ -256,19 +292,38 @@ static void draw_screen_locked(void)
         // gr_color(0, 0, 0, 160);
         // gr_fill(0, 0, gr_fb_width(), gr_fb_height());
 
-        int total_rows = gr_fb_height() / CHAR_HEIGHT;
+	gr_surface surface = gVirtualKeys;
+        int total_rows = (gr_fb_height() - gr_get_height(surface)) / CHAR_HEIGHT;
         int i = 0;
         int j = 0;
-        int row = 0;            // current row that we are drawing on
+        int row = 0; // current row that we are drawing on
         if (show_menu) {
-#ifndef BOARD_TOUCH_RECOVERY
+	    int batt_level = 0;
+            batt_level = get_batt_stats();
+            if (batt_level < 21) {
+                gr_color(255, 0, 0, 255);
+            }
+            
+	    /*struct tm *current;
+	    time_t now;
+	    now = time(NULL); // add 2 hours
+	    current = localtime(&now);*/
+            
+            char batt_text[40];
+            //sprintf(batt_text, "[%d%% %02D:%02D]", batt_level, current->tm_hour, current->tm_min);
+            
+            //if (now == NULL) { // just in case
+	    sprintf(batt_text, "[%d%%]", batt_level);
+
+            gr_color(MENU_TEXT_COLOR);
+		draw_text_line(0, batt_text, RIGHT_ALIGN);
             gr_color(MENU_TEXT_COLOR);
             gr_fill(0, (menu_top + menu_sel - menu_show_start) * CHAR_HEIGHT,
                     gr_fb_width(), (menu_top + menu_sel - menu_show_start + 1)*CHAR_HEIGHT+1);
 
             gr_color(HEADER_TEXT_COLOR);
             for (i = 0; i < menu_top; ++i) {
-                draw_text_line(i, menu[i]);
+                draw_text_line(i, menu[i], LEFT_ALIGN);
                 row++;
             }
 
@@ -281,11 +336,11 @@ static void draw_screen_locked(void)
             for (i = menu_show_start + menu_top; i < (menu_show_start + menu_top + j); ++i) {
                 if (i == menu_top + menu_sel) {
                     gr_color(255, 255, 255, 255);
-                    draw_text_line(i - menu_show_start , menu[i]);
+                    draw_text_line(i - menu_show_start , menu[i], LEFT_ALIGN);
                     gr_color(MENU_TEXT_COLOR);
                 } else {
                     gr_color(MENU_TEXT_COLOR);
-                    draw_text_line(i - menu_show_start, menu[i]);
+                    draw_text_line(i - menu_show_start, menu[i], LEFT_ALIGN);
                 }
                 row++;
                 if (row >= max_menu_rows)
@@ -294,9 +349,6 @@ static void draw_screen_locked(void)
 
             gr_fill(0, row*CHAR_HEIGHT+CHAR_HEIGHT/2-1,
                     gr_fb_width(), row*CHAR_HEIGHT+CHAR_HEIGHT/2+1);
-#else
-            row = draw_touch_menu(menu, menu_items, menu_top, menu_sel, menu_show_start);
-#endif
         }
 
         gr_color(NORMAL_TEXT_COLOR);
@@ -310,7 +362,7 @@ static void draw_screen_locked(void)
 
         int r;
         for (r = 0; r < (available_rows < MAX_ROWS ? available_rows : MAX_ROWS); r++) {
-            draw_text_line(start_row + r, text[(cur_row + r) % MAX_ROWS]);
+            draw_text_line(start_row + r, text[(cur_row + r) % MAX_ROWS], LEFT_ALIGN);
         }
     }
 }
@@ -388,25 +440,45 @@ static void *progress_thread(void *cookie)
     return NULL;
 }
 
+//kanged this vibrate stuff from teamwin (thanks guys!)
+//#define VIBRATOR_TIME_MS        10
+
 static int rel_sum = 0;
+static int in_touch = 0; //1 = in a touch
+static int slide_right = 0;
+static int slide_left = 0;
+static int s_tracking_id = -1;
+static int s_cur_slot = 0;
+static unsigned int touch_x = 0;
+static unsigned int touch_y = 0;
+static unsigned int old_x = 0;
+static unsigned int old_y = 0;
+static int diff_x = 0;
+static int diff_y = 0;
+
+static void reset_gestures() {
+    diff_x = 0;
+    diff_y = 0;
+    old_x  = 0;
+    old_y = 0;
+    touch_x = 0;
+    touch_y = 0;
+}
 
 static int input_callback(int fd, short revents, void *data)
 {
     struct input_event ev;
     int ret;
     int fake_key = 0;
+    gr_surface surface = gVirtualKeys;
 
     ret = ev_get_input(fd, revents, &ev);
     if (ret)
         return -1;
 
-#ifdef BOARD_TOUCH_RECOVERY
-    if (touch_handle_input(fd, ev))
-      return 0;
-#endif
-
     if (ev.type == EV_SYN) {
-        return 0;
+		s_cur_slot = 0;
+		return 0;
     } else if (ev.type == EV_REL) {
         if (ev.code == REL_Y) {
             // accumulate the up or down motion reported by
@@ -428,11 +500,112 @@ static int input_callback(int fd, short revents, void *data)
                 rel_sum = 0;
             }
         }
-    } else {
+    } else if (ev.type == EV_ABS) {
+    
+		if (ev.code == ABS_MT_SLOT) {
+            s_cur_slot = ev.value;
+            return 0;
+		}
+		if (s_cur_slot != 0) {
+			// use slot0 only
+			return 0;
+		}
+		int ABS[6] = {0};
+		int k;
+
+		ioctl(fd, EVIOCGABS(ABS_MT_POSITION_X), ABS);
+		int max_x_touch = ABS[2];
+
+		ioctl(fd, EVIOCGABS(ABS_MT_POSITION_Y), ABS);
+		int max_y_touch = ABS[2];
+
+		//printf("x and y bounds: %i x %i\n", max_x_touch, max_y_touch);
+
+		//start touch code
+		//LOGE("ev.type: %x, ev.code: %x, ev.value: %i\n", ev.type, ev.code, ev.value);
+		switch(ev.code){
+			case ABS_MT_TRACKING_ID:
+				s_tracking_id = ev.value;
+				if (s_tracking_id != -1) break;
+				//finger lifted! lets run with this
+				if (touch_y >= (gr_fb_height() - gr_get_height(surface)) && touch_x > 0) {
+					fake_key = 1;
+					ev.type = EV_KEY;
+					ev.code=input_buttons();
+					ev.value = 1;
+					rel_sum = 0;
+					vibrate(VIBRATOR_TIME_MS);
+				} else {
+					if(slide_right == 1) {
+						fake_key = 1;
+						ev.type = EV_KEY;
+						ev.code = KEY_POWER;
+						ev.value = 1;
+						rel_sum = 0;
+						slide_right = 0;
+					} else if(slide_left == 1) {
+						fake_key = 1;
+						ev.type = EV_KEY;
+						ev.code = KEY_BACK;
+						ev.value = 1;
+						rel_sum = 0;
+						slide_left = 0;
+					}
+				}
+				ev.value = 1;
+				reset_gestures();
+				break;
+			case ABS_MT_POSITION_X:
+				if (s_tracking_id == -1) break;
+				old_x = touch_x;
+				float touch_x_rel = (float)ev.value / (float)max_x_touch;
+				touch_x = touch_x_rel * gr_fb_width();
+				if(old_x == 0) break; 
+				diff_x += touch_x - old_x;
+				//if(touch_y < (gr_fb_height() - gr_get_height(surface))) {
+					int diff_w=gr_fb_width()/4;
+					if(diff_x > diff_w) {
+						slide_right = 1;
+						reset_gestures();
+					} else if(diff_x < (diff_w*-1)) {
+						slide_left = 1;
+						reset_gestures();
+					}
+				//} else input_buttons();
+				break;
+			case ABS_MT_POSITION_Y:
+				if (s_tracking_id == -1) break;
+				old_y = touch_y;
+				float touch_y_rel = (float)ev.value / (float)max_y_touch;
+				touch_y = touch_y_rel * gr_fb_height();
+				if(old_y == 0) break;
+				diff_y += touch_y - old_y;
+				if(touch_y < (gr_fb_height() - gr_get_height(surface))) {
+					int diff_h=(gr_fb_height() - gr_get_height(surface))/20;
+					if (diff_y > diff_h) {
+						fake_key = 1;
+						ev.type = EV_KEY;
+						ev.code = KEY_VOLUMEDOWN;
+						ev.value = 1;
+						rel_sum = 0;	            
+						reset_gestures();
+					} else if (diff_y < (diff_h*-1)) {
+						fake_key = 1;
+						ev.type = EV_KEY;
+						ev.code = KEY_VOLUMEUP;
+						ev.value = 1;
+						rel_sum = 0;
+						reset_gestures();
+					}
+				} else input_buttons();
+				break;
+			default:
+				break;
+		}
+	} else {
         rel_sum = 0;
     }
-
-    if (ev.type != EV_KEY || ev.code > KEY_MAX)
+	if (ev.type != EV_KEY || ev.code > KEY_MAX)
         return 0;
 
     if (ev.value == 2) {
@@ -493,16 +666,11 @@ void ui_init(void)
     ui_has_initialized = 1;
     gr_init();
     ev_init(input_callback, NULL);
-#ifdef BOARD_TOUCH_RECOVERY
-    touch_init();
-#endif
 
+    gr_surface surface = gVirtualKeys;
     text_col = text_row = 0;
-    text_rows = gr_fb_height() / CHAR_HEIGHT;
+    text_rows = (gr_fb_height() - gr_get_height(surface)) / CHAR_HEIGHT;
     max_menu_rows = text_rows - MIN_LOG_ROWS;
-#ifdef BOARD_TOUCH_RECOVERY
-    max_menu_rows = get_max_menu_rows(max_menu_rows);
-#endif
     if (max_menu_rows > MENU_MAX_ROWS)
         max_menu_rows = MENU_MAX_ROWS;
     if (text_rows > MAX_ROWS) text_rows = MAX_ROWS;
@@ -887,7 +1055,6 @@ int ui_wait_key()
     do {
         struct timeval now;
         struct timespec timeout;
-        gettimeofday(&now, NULL);
         timeout.tv_sec = now.tv_sec;
         timeout.tv_nsec = now.tv_usec * 1000;
         timeout.tv_sec += REFRESH_TIME_USB_INTERVAL;
@@ -1060,11 +1227,7 @@ int ui_get_selected_item() {
 }
 
 int ui_handle_key(int key, int visible) {
-#ifdef BOARD_TOUCH_RECOVERY
-    return touch_handle_key(key, visible);
-#else
     return device_handle_key(key, visible);
-#endif
 }
 
 void ui_delete_line() {
@@ -1104,4 +1267,67 @@ void ui_set_rainbow_mode(int rainbowMode) {
     update_screen_locked();
     pthread_mutex_unlock(&gUpdateMutex);
 }
+
+int get_batt_stats(void)
+{
+    static int level = -1;
+
+    char value[4];
+    FILE * capacity = fopen("/sys/class/power_supply/battery/capacity","rt");
+    if (capacity)
+    {
+        fgets(value, 4, capacity);
+        fclose(capacity);
+        level = atoi(value);
+
+        if (level > 100)
+            level = 100;
+        if (level < 0)
+            level = 0;
+    }
+    return level;
+}
+
+int input_buttons()
+{
+	int final_code = 0; 	
+	gr_surface surface = gVirtualKeys;
+	if (touch_y >= (gr_fb_height() - gr_get_height(surface)) && touch_x > 0) {   
+		int start_draw = 0;
+		int end_draw = 0;		
+		unsigned int keywidth = gr_get_width(surface) / 4;
+		unsigned int keyoffset = (gr_fb_width() - gr_get_width(surface)) / 2;
+		if (touch_x < (keywidth + keyoffset + 1)) {
+		    //down button
+		    final_code = KEY_VOLUMEDOWN;
+		    start_draw = keyoffset;
+		    end_draw = keywidth + keyoffset;
+		} else if (touch_x < ((keywidth * 2) + keyoffset + 1)) {
+		    //up button
+		    final_code = KEY_VOLUMEUP;
+		    start_draw = keywidth + keyoffset + 1;
+		    end_draw = (keywidth * 2) + keyoffset;
+		} else if (touch_x < ((keywidth * 3) + keyoffset + 1)) {
+		    //back button
+		    final_code = KEY_BACK;
+		    start_draw = (keywidth * 2) + keyoffset + 1;
+		    end_draw = (keywidth * 3) + keyoffset;
+		} else if (touch_x < ((keywidth * 4) + keyoffset + 1)) {
+		    //enter key
+		    final_code = KEY_POWER;
+		    start_draw = (keywidth * 3) + keyoffset + 1;
+		    end_draw = (keywidth * 4) + keyoffset;
+		}
+		pthread_mutex_lock(&gUpdateMutex);
+		//gr_color(0, 0, 0, 255);     // clear old touch points
+		//gr_fill(0, gr_fb_height()-gr_get_height(surface)-2, start_draw-1, gr_fb_height()-gr_get_height(surface));
+		//gr_fill(end_draw+1, gr_fb_height()-gr_get_height(surface)-2, gr_fb_width(), gr_fb_height()-gr_get_height(surface));
+		gr_color(MENU_TEXT_COLOR);
+		gr_fill(start_draw, gr_fb_height()-gr_get_height(surface), end_draw, gr_fb_height());
+		gr_flip();
+		pthread_mutex_unlock(&gUpdateMutex);
+	}
+    return final_code;
+}
+
 
