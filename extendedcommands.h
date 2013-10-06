@@ -37,7 +37,7 @@ __system(const char *command);
 int
 show_advanced_menu();
 
-int show_romswitcher_menu();
+int show_install_update_menu();
 
 int format_device(const char *device, const char *path, const char *fs_type);
 
