@@ -37,6 +37,8 @@ __system(const char *command);
 int
 show_advanced_menu();
 
+int show_romswitcher_menu();
+
 int format_device(const char *device, const char *path, const char *fs_type);
 
 int format_unknown_device(const char *device, const char* path, const char *fs_type);
@@ -51,7 +53,7 @@ void process_volumes();
 
 int extendedcommand_file_exists();
 
-int show_install_update_menu();
+int show_rs_dual_menu();
 
 int confirm_selection(const char* title, const char* confirm);
 

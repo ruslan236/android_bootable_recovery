@@ -1711,3 +1711,91 @@ int verify_root_and_recovery() {
     ensure_path_unmounted("/system");
     return ret;
 }
+
+#define ITEM_ZIP_INTERNAL     0
+#define ITEM_ZIP_EXTERNAL     1
+
+int show_rs_dual_menu()
+{
+    char buf[100];
+    int i = 0, chosen_item = 0;
+    static char* install_menu_items[MAX_NUM_MANAGED_VOLUMES + 1];
+
+    char* primary_path = get_primary_storage_path();
+    char** extra_paths = get_extra_storage_paths();
+    int num_extra_volumes = get_num_extra_volumes();
+
+    memset(install_menu_items, 0, MAX_NUM_MANAGED_VOLUMES + 1);
+
+    static const char* headers[] = {  "RomSwitcher Dual - Menu",
+                                "",
+                                NULL
+    };
+
+    install_menu_items[0] = "Install ZIP to 2ndROM from internal SD";
+
+    install_menu_items[1 + num_extra_volumes] = NULL;
+
+    for (i = 0; i < num_extra_volumes; i++) {
+        install_menu_items[1 + i] = "Install ZIP to 2ndROM from external SD";
+    }
+
+    for (;;)
+    {
+        chosen_item = get_menu_selection(headers, install_menu_items, 0, 0);
+        if (chosen_item == GO_BACK || chosen_item == REFRESH)
+            break;
+        switch (chosen_item)
+        {
+            case ITEM_ZIP_INTERNAL:
+                show_choose_zip_menu_dual(primary_path);
+                write_recovery_version();
+                break;
+	    case ITEM_ZIP_EXTERNAL:
+		show_choose_zip_menu_dual(extra_paths[chosen_item - 1]);
+		break;
+            default:
+		break;
+        }
+    }
+    return chosen_item;
+}
+
+void show_choose_zip_menu_dual(const char *mount_point)
+{
+    if (ensure_path_mounted(mount_point) != 0) {
+        LOGE ("Can't mount %s\n", mount_point);
+        return;
+    }
+
+    static const char* headers[] = {  "Choose a zip for 2ndrom",
+                                "",
+                                NULL
+    };
+
+    char* file = choose_file_menu(mount_point, ".zip", headers);
+    if (file == NULL)
+        return;
+    static char* confirm_install  = "Confirm install?";
+    static char confirm[PATH_MAX];
+    char mount[PATH_MAX];
+    sprintf(confirm, "Yes - Install %s", basename(file));
+    if (confirm_selection(confirm_install, confirm)) {
+	ui_print("Loading RomSwitcher Scripts\n");
+	__system("/sbin/create_system.sh secondary");
+	ui_print("Preparing your zip...\n");
+	sprintf(mount, "dual_mod.sh %s %s", mount_point, file);
+	int ret = 0;
+	ret = __system(mount);
+
+	if (ret == 0) {
+	    ui_print("Zip modified...installing....\n");
+	    install_zip(file);
+	} else {
+	    ui_print("Something went wrong...\nPlease send me recovery.log\n");
+	}
+
+	__system("/sbin/mount_dual.sh primary");
+    }
+}
+

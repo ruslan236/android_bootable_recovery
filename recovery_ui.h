@@ -92,6 +92,8 @@ int device_wipe_data();
 #define ITEM_NANDROID        4
 #define ITEM_PARTITION       5
 #define ITEM_ADVANCED        6
+#define ITEM_RS_DUAL         7
+#define ITEM_POWER_OFF       8
 #define VIBRATOR_TIME_MS     30
 
 // Header text to display above the main menu.
