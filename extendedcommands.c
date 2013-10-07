@@ -1773,6 +1773,7 @@ int show_rs_dual_menu()
 	    case ITEM_WIPE_DATA_2ND:
 		if (confirm_selection( "Confirm wipe?", "Yes - Wipe data of 2ndROM")) {
                     __system("rm -rf /data/media/.secondrom/data");
+		    __system("rm -rf /data/media/.secondrom/cache");
                     ui_print("Data of 2ndROM wiped.\n");
                 }
                 ensure_path_unmounted("/data");
