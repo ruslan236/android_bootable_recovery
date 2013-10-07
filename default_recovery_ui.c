@@ -29,7 +29,7 @@ char* MENU_ITEMS[] = { "reboot system now",
                        "backup and restore",
                        "mounts and storage",
                        "advanced",
-		       "romswitcher - dual",
+		       "romswitcher - dual (internal SD)",
 		       "power off",
                        NULL };
 

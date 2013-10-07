@@ -4,8 +4,6 @@ BB="busybox"
 FILESYSTEM=$1
 UMOUNT="busybox umount -f"
 
-BLOCKDEVICE=mmcblk0p21 #data
-
 if [ $FILESYSTEM == "secondary" ]; then
 
    $BB mkdir -p /data/media/.secondrom
@@ -13,7 +11,7 @@ if [ $FILESYSTEM == "secondary" ]; then
 
    if $BB [ ! -f $system ] ; then
 	# create a file 650MB
-	$BB dd if=/dev/zero of=$system bs=1024 count=657286 || exit 1
+	$BB dd if=/dev/zero of=$system bs=2048 count=657286 || exit 1
 	# create ext4 filesystem
 	$BB mke2fs -F -T ext4 $system || exit 1
    fi

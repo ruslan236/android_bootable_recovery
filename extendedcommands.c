@@ -1714,6 +1714,9 @@ int verify_root_and_recovery() {
 
 #define ITEM_ZIP_INTERNAL     0
 #define ITEM_ZIP_EXTERNAL     1
+#define ITEM_REMOVE_2ND       2
+#define ITEM_WIPE_DATA_2ND    3
+#define ITEM_WIPE_CACHE_2ND   4
 
 int show_rs_dual_menu()
 {
@@ -1732,12 +1735,18 @@ int show_rs_dual_menu()
                                 NULL
     };
 
-    install_menu_items[0] = "Install ZIP to 2ndROM from internal SD";
+    install_menu_items[0] = "install ZIP to 2ndROM from internal SD";
 
     install_menu_items[1 + num_extra_volumes] = NULL;
 
+    install_menu_items[2] = "remove 2ndROM";
+
+    install_menu_items[3] = "wipe data of 2ndROM";
+
+    install_menu_items[4] = "wipe cache of 2ndROM";
+
     for (i = 0; i < num_extra_volumes; i++) {
-        install_menu_items[1 + i] = "Install ZIP to 2ndROM from external SD";
+        install_menu_items[1 + i] = "install ZIP to 2ndROM from external SD";
     }
 
     for (;;)
@@ -1753,6 +1762,28 @@ int show_rs_dual_menu()
                 break;
 	    case ITEM_ZIP_EXTERNAL:
 		show_choose_zip_menu_dual(extra_paths[chosen_item - 1]);
+		break;
+	    case ITEM_REMOVE_2ND:
+                if (confirm_selection( "Confirm remove?", "Yes - Remove 2ndROM")) {
+                    __system("rm -rf /data/media/.secondrom");
+                    ui_print("2ndROM removed.\n");
+                }
+                ensure_path_unmounted("/data");
+		break;
+	    case ITEM_WIPE_DATA_2ND:
+		if (confirm_selection( "Confirm wipe?", "Yes - Wipe data of 2ndROM")) {
+                    __system("rm -rf /data/media/.secondrom/data");
+                    ui_print("Data of 2ndROM wiped.\n");
+                }
+                ensure_path_unmounted("/data");
+		break;
+	    case ITEM_WIPE_CACHE_2ND:
+		if (confirm_selection( "Confirm wipe?", "Yes - Wipe cache of 2ndROM")) {
+                    __system("rm -rf /data/media/.secondrom/cache");
+		    __system("rm -rf /data/media/.secondrom/data/dalvik-cache");
+                    ui_print("Cache of 2ndROM wiped.\n");
+                }
+                ensure_path_unmounted("/data");
 		break;
             default:
 		break;
@@ -1781,21 +1812,25 @@ void show_choose_zip_menu_dual(const char *mount_point)
     char mount[PATH_MAX];
     sprintf(confirm, "Yes - Install %s", basename(file));
     if (confirm_selection(confirm_install, confirm)) {
-	ui_print("Loading RomSwitcher Scripts\n");
-	__system("/sbin/create_system.sh secondary");
-	ui_print("Preparing your zip...\n");
-	sprintf(mount, "dual_mod.sh %s %s", mount_point, file);
-	int ret = 0;
-	ret = __system(mount);
+	ui_print("Loading RomSwitcher Scripts....\n");
 
-	if (ret == 0) {
-	    ui_print("Zip modified...installing....\n");
-	    install_zip(file);
+	int createvalue = 0;
+	int dualvalue = 0;
+
+	createvalue = __system("create_system.sh secondary");
+	if (createvalue == 0) {
+	    sprintf(mount, "dual_mod.sh %s %s", mount_point, file);
+	    dualvalue = __system(mount);
+	    if (dualvalue == 0) {
+		ui_print("Installing....\n");
+		install_zip(file);
+	    } else {
+		ui_print("Something went wrong...\nPlease send me recovery.log\n");
+	    }
 	} else {
-	    ui_print("Something went wrong...\nPlease send me recovery.log\n");
+	    ui_print("Cannot create system.img!\nMake sure you have enough space\n");
 	}
-
-	__system("/sbin/mount_dual.sh primary");
+	__system("/sbin/mount_recovery.sh primary");
     }
 }
 
