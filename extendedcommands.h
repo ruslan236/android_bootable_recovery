@@ -53,7 +53,9 @@ void process_volumes();
 
 int extendedcommand_file_exists();
 
-int show_rs_dual_menu();
+int show_rs_second_menu();
+
+int show_rs_third_menu();
 
 int confirm_selection(const char* title, const char* confirm);
 

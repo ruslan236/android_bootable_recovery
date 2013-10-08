@@ -29,8 +29,9 @@ char* MENU_ITEMS[] = { "reboot system now",
                        "backup and restore",
                        "mounts and storage",
                        "advanced",
-		       "romswitcher - dual (internal SD)",
-		       "power off",
+                       "romswitcher - second (internal SD)",
+                       "romswitcher - third (internal SD)",
+                       "power off",
                        NULL };
 
 void device_ui_init(UIParameters* ui_parameters) {

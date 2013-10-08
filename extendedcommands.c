@@ -1712,13 +1712,15 @@ int verify_root_and_recovery() {
     return ret;
 }
 
-#define ITEM_ZIP_INTERNAL     0
-#define ITEM_ZIP_EXTERNAL     1
+//Second Rom
+
+#define ITEM_ZIP_2ND_INTERNAL 0
+#define ITEM_ZIP_2ND_EXTERNAL 1
 #define ITEM_REMOVE_2ND       2
 #define ITEM_WIPE_DATA_2ND    3
 #define ITEM_WIPE_CACHE_2ND   4
 
-int show_rs_dual_menu()
+int show_rs_second_menu()
 {
     char buf[100];
     int i = 0, chosen_item = 0;
@@ -1730,7 +1732,7 @@ int show_rs_dual_menu()
 
     memset(install_menu_items, 0, MAX_NUM_MANAGED_VOLUMES + 1);
 
-    static const char* headers[] = {  "RomSwitcher Dual - Menu",
+    static const char* headers[] = {  "RomSwitcher Second - Menu",
                                 "",
                                 NULL
     };
@@ -1756,44 +1758,44 @@ int show_rs_dual_menu()
             break;
         switch (chosen_item)
         {
-            case ITEM_ZIP_INTERNAL:
-                show_choose_zip_menu_dual(primary_path);
+            case ITEM_ZIP_2ND_INTERNAL:
+                show_choose_zip_menu_second(primary_path);
                 write_recovery_version();
                 break;
-	    case ITEM_ZIP_EXTERNAL:
-		show_choose_zip_menu_dual(extra_paths[chosen_item - 1]);
-		break;
-	    case ITEM_REMOVE_2ND:
+            case ITEM_ZIP_2ND_EXTERNAL:
+                show_choose_zip_menu_second(extra_paths[chosen_item - 1]);
+                break;
+            case ITEM_REMOVE_2ND:
                 if (confirm_selection( "Confirm remove?", "Yes - Remove 2ndROM")) {
                     __system("rm -rf /data/media/.secondrom");
                     ui_print("2ndROM removed.\n");
                 }
                 ensure_path_unmounted("/data");
-		break;
-	    case ITEM_WIPE_DATA_2ND:
-		if (confirm_selection( "Confirm wipe?", "Yes - Wipe data of 2ndROM")) {
+                break;
+            case ITEM_WIPE_DATA_2ND:
+                if (confirm_selection( "Confirm wipe?", "Yes - Wipe data of 2ndROM")) {
                     __system("rm -rf /data/media/.secondrom/data");
-		    __system("rm -rf /data/media/.secondrom/cache");
+                    __system("rm -rf /data/media/.secondrom/cache");
                     ui_print("Data of 2ndROM wiped.\n");
                 }
                 ensure_path_unmounted("/data");
-		break;
-	    case ITEM_WIPE_CACHE_2ND:
-		if (confirm_selection( "Confirm wipe?", "Yes - Wipe cache of 2ndROM")) {
+                break;
+            case ITEM_WIPE_CACHE_2ND:
+                if (confirm_selection( "Confirm wipe?", "Yes - Wipe cache of 2ndROM")) {
                     __system("rm -rf /data/media/.secondrom/cache");
-		    __system("rm -rf /data/media/.secondrom/data/dalvik-cache");
+                    __system("rm -rf /data/media/.secondrom/data/dalvik-cache");
                     ui_print("Cache of 2ndROM wiped.\n");
                 }
                 ensure_path_unmounted("/data");
-		break;
+                break;
             default:
-		break;
+                break;
         }
     }
     return chosen_item;
 }
 
-void show_choose_zip_menu_dual(const char *mount_point)
+void show_choose_zip_menu_second(const char *mount_point)
 {
     if (ensure_path_mounted(mount_point) != 0) {
         LOGE ("Can't mount %s\n", mount_point);
@@ -1816,13 +1818,13 @@ void show_choose_zip_menu_dual(const char *mount_point)
 	ui_print("Loading RomSwitcher Scripts....\n");
 
 	int createvalue = 0;
-	int dualvalue = 0;
+	int secondvalue = 0;
 
 	createvalue = __system("create_system.sh secondary");
 	if (createvalue == 0) {
-	    sprintf(mount, "dual_mod.sh %s %s", mount_point, file);
-	    dualvalue = __system(mount);
-	    if (dualvalue == 0) {
+	    sprintf(mount, "second_mod.sh %s %s", mount_point, file);
+	    secondvalue = __system(mount);
+	    if (secondvalue == 0) {
 		ui_print("Installing....\n");
 		install_zip(file);
 	    } else {
@@ -1835,3 +1837,127 @@ void show_choose_zip_menu_dual(const char *mount_point)
     }
 }
 
+//Third Rom
+
+#define ITEM_ZIP_3RD_INTERNAL 0
+#define ITEM_ZIP_3RD_EXTERNAL 1
+#define ITEM_REMOVE_3RD       2
+#define ITEM_WIPE_DATA_3RD    3
+#define ITEM_WIPE_CACHE_3RD   4
+
+int show_rs_third_menu()
+{
+    char buf[100];
+    int i = 0, chosen_item = 0;
+    static char* install_menu_items[MAX_NUM_MANAGED_VOLUMES + 1];
+    
+    char* primary_path = get_primary_storage_path();
+    char** extra_paths = get_extra_storage_paths();
+    int num_extra_volumes = get_num_extra_volumes();
+    
+    memset(install_menu_items, 0, MAX_NUM_MANAGED_VOLUMES + 1);
+    
+    static const char* headers[] = {  "RomSwitcher Third - Menu",
+        "",
+        NULL
+    };
+    
+    install_menu_items[0] = "install ZIP to 3rdROM from internal SD";
+    
+    install_menu_items[1 + num_extra_volumes] = NULL;
+    
+    install_menu_items[2] = "remove 3rdROM";
+    
+    install_menu_items[3] = "wipe data of 3rdROM";
+    
+    install_menu_items[4] = "wipe cache of 3rdROM";
+    
+    for (i = 0; i < num_extra_volumes; i++) {
+        install_menu_items[1 + i] = "install ZIP to 3rdROM from external SD";
+    }
+    
+    for (;;)
+    {
+        chosen_item = get_menu_selection(headers, install_menu_items, 0, 0);
+        if (chosen_item == GO_BACK || chosen_item == REFRESH)
+            break;
+        switch (chosen_item)
+        {
+            case ITEM_ZIP_2ND_INTERNAL:
+                show_choose_zip_menu_third(primary_path);
+                write_recovery_version();
+                break;
+            case ITEM_ZIP_2ND_EXTERNAL:
+                show_choose_zip_menu_third(extra_paths[chosen_item - 1]);
+                break;
+            case ITEM_REMOVE_2ND:
+                if (confirm_selection( "Confirm remove?", "Yes - Remove 3rdROM")) {
+                    __system("rm -rf /data/media/.thirdrom");
+                    ui_print("3rdROM removed.\n");
+                }
+                ensure_path_unmounted("/data");
+                break;
+            case ITEM_WIPE_DATA_2ND:
+                if (confirm_selection( "Confirm wipe?", "Yes - Wipe data of 3rdROM")) {
+                    __system("rm -rf /data/media/.thirdrom/data");
+                    __system("rm -rf /data/media/.thirdrom/cache");
+                    ui_print("Data of 3rdROM wiped.\n");
+                }
+                ensure_path_unmounted("/data");
+                break;
+            case ITEM_WIPE_CACHE_2ND:
+                if (confirm_selection( "Confirm wipe?", "Yes - Wipe cache of 3rdROM")) {
+                    __system("rm -rf /data/media/.thirdrom/cache");
+                    __system("rm -rf /data/media/.thirdrom/data/dalvik-cache");
+                    ui_print("Cache of 3rdROM wiped.\n");
+                }
+                ensure_path_unmounted("/data");
+                break;
+            default:
+                break;
+        }
+    }
+    return chosen_item;
+}
+
+void show_choose_zip_menu_third(const char *mount_point)
+{
+    if (ensure_path_mounted(mount_point) != 0) {
+        LOGE ("Can't mount %s\n", mount_point);
+        return;
+    }
+    
+    static const char* headers[] = {  "Choose a zip for 3rdROM",
+        "",
+        NULL
+    };
+    
+    char* file = choose_file_menu(mount_point, ".zip", headers);
+    if (file == NULL)
+        return;
+    static char* confirm_install  = "Confirm install?";
+    static char confirm[PATH_MAX];
+    char mount[PATH_MAX];
+    sprintf(confirm, "Yes - Install %s", basename(file));
+    if (confirm_selection(confirm_install, confirm)) {
+        ui_print("Loading RomSwitcher Scripts....\n");
+        
+        int createvalue = 0;
+        int thirdvalue = 0;
+        
+        createvalue = __system("create_system.sh tertiary");
+        if (createvalue == 0) {
+            sprintf(mount, "third_mod.sh %s %s", mount_point, file);
+            thirdvalue = __system(mount);
+            if (thirdvalue == 0) {
+                ui_print("Installing....\n");
+                install_zip(file);
+            } else {
+                ui_print("Something went wrong...\nPlease send me recovery.log\n");
+            }
+        } else {
+            ui_print("Cannot create system.img!\nMake sure you have enough space\n");
+        }
+        __system("/sbin/mount_recovery.sh primary");
+    }
+}
