@@ -1813,6 +1813,7 @@ void show_choose_zip_menu_second(const char *mount_point)
     static char* confirm_install  = "Confirm install?";
     static char confirm[PATH_MAX];
     char mount[PATH_MAX];
+    char move[PATH_MAX];
     sprintf(confirm, "Yes - Install %s", basename(file));
     if (confirm_selection(confirm_install, confirm)) {
 	ui_print("Loading RomSwitcher Scripts....\n");
@@ -1822,10 +1823,9 @@ void show_choose_zip_menu_second(const char *mount_point)
 
 	createvalue = __system("create_system.sh secondary");
 	if (createvalue == 0) {
-	    sprintf(mount, "second_mod.sh %s %s", mount_point, file);
+	    sprintf(mount, "update_mod.sh secondary %s %s", mount_point, file);
 	    secondvalue = __system(mount);
 	    if (secondvalue == 0) {
-		ui_print("Installing....\n");
 		install_zip(file);
 	    } else {
 		ui_print("Something went wrong...\nPlease send me recovery.log\n");
@@ -1833,6 +1833,8 @@ void show_choose_zip_menu_second(const char *mount_point)
 	} else {
 	    ui_print("Cannot create system.img!\nMake sure you have enough space\n");
 	}
+	sprintf(move, "mv -f %s/rs/*.zip %s", mount_point, file);
+	__system(move);
 	__system("/sbin/mount_recovery.sh primary");
     }
 }
@@ -1883,21 +1885,21 @@ int show_rs_third_menu()
             break;
         switch (chosen_item)
         {
-            case ITEM_ZIP_2ND_INTERNAL:
+            case ITEM_ZIP_3RD_INTERNAL:
                 show_choose_zip_menu_third(primary_path);
                 write_recovery_version();
                 break;
-            case ITEM_ZIP_2ND_EXTERNAL:
+            case ITEM_ZIP_3RD_EXTERNAL:
                 show_choose_zip_menu_third(extra_paths[chosen_item - 1]);
                 break;
-            case ITEM_REMOVE_2ND:
+            case ITEM_REMOVE_3RD:
                 if (confirm_selection( "Confirm remove?", "Yes - Remove 3rdROM")) {
                     __system("rm -rf /data/media/.thirdrom");
                     ui_print("3rdROM removed.\n");
                 }
                 ensure_path_unmounted("/data");
                 break;
-            case ITEM_WIPE_DATA_2ND:
+            case ITEM_WIPE_DATA_3RD:
                 if (confirm_selection( "Confirm wipe?", "Yes - Wipe data of 3rdROM")) {
                     __system("rm -rf /data/media/.thirdrom/data");
                     __system("rm -rf /data/media/.thirdrom/cache");
@@ -1905,7 +1907,7 @@ int show_rs_third_menu()
                 }
                 ensure_path_unmounted("/data");
                 break;
-            case ITEM_WIPE_CACHE_2ND:
+            case ITEM_WIPE_CACHE_3RD:
                 if (confirm_selection( "Confirm wipe?", "Yes - Wipe cache of 3rdROM")) {
                     __system("rm -rf /data/media/.thirdrom/cache");
                     __system("rm -rf /data/media/.thirdrom/data/dalvik-cache");
@@ -1938,6 +1940,7 @@ void show_choose_zip_menu_third(const char *mount_point)
     static char* confirm_install  = "Confirm install?";
     static char confirm[PATH_MAX];
     char mount[PATH_MAX];
+    char move[PATH_MAX];
     sprintf(confirm, "Yes - Install %s", basename(file));
     if (confirm_selection(confirm_install, confirm)) {
         ui_print("Loading RomSwitcher Scripts....\n");
@@ -1947,10 +1950,9 @@ void show_choose_zip_menu_third(const char *mount_point)
         
         createvalue = __system("create_system.sh tertiary");
         if (createvalue == 0) {
-            sprintf(mount, "third_mod.sh %s %s", mount_point, file);
+            sprintf(mount, "update_mod.sh tertiary %s %s", mount_point, file);
             thirdvalue = __system(mount);
             if (thirdvalue == 0) {
-                ui_print("Installing....\n");
                 install_zip(file);
             } else {
                 ui_print("Something went wrong...\nPlease send me recovery.log\n");
@@ -1958,6 +1960,8 @@ void show_choose_zip_menu_third(const char *mount_point)
         } else {
             ui_print("Cannot create system.img!\nMake sure you have enough space\n");
         }
+	sprintf(move, "mv -f %s/rs/*.zip %s", mount_point, file);
+	__system(move);
         __system("/sbin/mount_recovery.sh primary");
     }
 }

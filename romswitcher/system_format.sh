@@ -32,6 +32,11 @@ elif [ "$1" == "tertiary" ] ; then
    $BB rm -rf /system/.*
    $BB mke2fs -F -T ext4 $third || exit 1
 
+else
+
+   exit 1
+   echo "failed to create system.img"
+
 fi
 
 exit 0
