@@ -19,9 +19,9 @@ if [ "$1" == "secondary" ] ; then
 
 elif [ "$1" == "tertiary" ] ; then
    if $BB grep -q /data /proc/mounts; then
-      third=/data/media/.secondrom/system.img
+      third=/data/media/.thirdrom/system.img
     else
-      third=/.firstrom/media/.secondrom/system.img
+      third=/.firstrom/media/.thirdrom/system.img
    fi
 
    $BB umount -f /system
