@@ -1855,7 +1855,7 @@ void show_choose_zip_menu_second(const char *mount_point)
     char move[PATH_MAX];
     sprintf(confirm, "Yes - Install %s", basename(file));
     if (confirm_selection(confirm_install, confirm)) {
-	ui_print("Loading RomSwitcher Scripts....\n");
+	ui_print("Loading Scripts....\n");
 
 	int createvalue = 0;
 	int mountvalue = 0;
@@ -1975,7 +1975,7 @@ void show_choose_zip_menu_third(const char *mount_point)
     char move[PATH_MAX];
     sprintf(confirm, "Yes - Install %s", basename(file));
     if (confirm_selection(confirm_install, confirm)) {
-        ui_print("Loading RomSwitcher Scripts....\n");
+        ui_print("Loading Scripts....\n");
         
         int createvalue = 0;
         int mountvalue = 0;
