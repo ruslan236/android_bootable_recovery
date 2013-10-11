@@ -72,6 +72,33 @@ elif [ "$1" == "tertiary" ] ; then
    $BB mkdir -p /system
    $MOUNT -t ext4 -o rw /.firstrom/media/.thirdrom/system.img /system
 
+elif [ "$1" == "quaternary" ] ; then
+   if ! $BB grep -q /storage/sdcard1 /proc/mounts; then
+      $BB mkdir -p /storage/sdcard1
+      $BB mount -t auto -o rw /dev/block/mmcblk1p1 /storage/sdcard1 || exit 1
+   fi
+
+   $UMOUNT /system
+   $UMOUNT /data
+   $UMOUNT /cache
+
+   $BB mkdir -p /.firstrom
+   $MOUNT -t ext4 -o rw /dev/block/$BLOCKDEVICE /.firstrom
+
+   $BB mkdir -p /data
+   $BB mkdir -p /storage/sdcard1/romswitcher/.fourthrom/data
+   $MOUNT --bind /storage/sdcard1/romswitcher/.fourthrom/data /data
+
+   $BB mkdir -p /cache
+   $BB mkdir -p /storage/sdcard1/romswitcher/.fourthrom/cache
+   $MOUNT --bind /storage/sdcard1/romswitcher/.fourthrom/cache /cache
+
+   $BB mkdir -p /data/media
+   $MOUNT --bind /.firstrom/media /data/media
+
+   $BB mkdir -p /system
+   $MOUNT -t ext4 -o rw /storage/sdcard1/romswitcher/.fourthrom/system.img /system
+
 else
    echo "missing paramter"
    exit 1

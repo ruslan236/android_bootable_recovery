@@ -180,11 +180,11 @@ LOCAL_SRC_FILES := romswitcher/create_system.sh
 include $(BUILD_PREBUILT)
 
 include $(CLEAR_VARS)
-LOCAL_MODULE := update_mod.sh
+LOCAL_MODULE := mount_external.sh
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE_CLASS := RECOVERY_EXECUTABLES
 LOCAL_MODULE_PATH := $(TARGET_RECOVERY_ROOT_OUT)/sbin
-LOCAL_SRC_FILES := romswitcher/update_mod.sh
+LOCAL_SRC_FILES := romswitcher/mount_external.sh
 include $(BUILD_PREBUILT)
 
 include $(CLEAR_VARS)
@@ -209,6 +209,14 @@ LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE_CLASS := RECOVERY_EXECUTABLES
 LOCAL_MODULE_PATH := $(TARGET_RECOVERY_ROOT_OUT)/sbin
 LOCAL_SRC_FILES := romswitcher/unzip_binary
+include $(BUILD_PREBUILT)
+
+include $(CLEAR_VARS)
+LOCAL_MODULE := update_mod.sh
+LOCAL_MODULE_TAGS := optional
+LOCAL_MODULE_CLASS := RECOVERY_EXECUTABLES
+LOCAL_MODULE_PATH := $(TARGET_RECOVERY_ROOT_OUT)/sbin
+LOCAL_SRC_FILES := romswitcher/update_mod.sh
 include $(BUILD_PREBUILT)
 
 include $(CLEAR_VARS)
