@@ -8,9 +8,9 @@ BB="busybox"
 MOUNT="busybox mount"
 UMOUNT="busybox umount -f"
 
-BLOCKDEVICE=mmcblk0p21 #data
-CACHEPARTITION=mmcblk0p19 #cache
-SYSTEMPARTITION=mmcblk0p20 #system
+BLOCKDEVICE=mmcblk0p37 #data
+CACHEPARTITION=mmcblk0p36 #cache
+SYSTEMPARTITION=mmcblk0p35 #system
 
 ########## if called with umount parameter, just umount everything and exit ######################
 if [ "$1" == "primary" ] ; then
