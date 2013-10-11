@@ -1716,12 +1716,11 @@ int verify_root_and_recovery() {
 
 #define ITEM_SECOND_ROM       0
 #define ITEM_THIRD_ROM        1
-#define ITEM_FOURTH_ROM       2
 
 int show_rs_menu()
 {
 
-    int i = 0, chosen_item = 0, mountext = 0;
+    int i = 0, chosen_item = 0;
     static char* install_menu_items[MAX_NUM_MANAGED_VOLUMES + 1];
 
     static const char* headers[] = {  "RomSwitcher - Menu",
@@ -1732,8 +1731,6 @@ int show_rs_menu()
     install_menu_items[0] = "2ndROM (internal SD 650MB)";
 
     install_menu_items[1] = "3rdROM (internal SD 650MB)";
-
-    install_menu_items[2] = "4thROM (external SD 2.5GB)";
 
     for (;;)
     {
@@ -1748,14 +1745,6 @@ int show_rs_menu()
 	    case ITEM_THIRD_ROM:
                 show_rs_third();
                 break;
-	    case ITEM_FOURTH_ROM:
-		mountext = __system("/sbin/mount_external.sh");
-    		if (mountext == 1) {
-		    ui_print("Can't mount external SD\n");
-		} else {
-		    show_rs_fourth();
-		}
-		break;
             default:
                 break;
         }
@@ -1815,7 +1804,6 @@ void show_rs_second()
                 break;
             case ITEM_ZIP_RS_EXT:
                 show_choose_zip_menu_second(extra_paths[chosen_item - 1]);
-		write_recovery_version();
                 break;
             case ITEM_REMOVE_RS:
                 if (confirm_selection( "Confirm remove?", "Yes - Remove 2ndROM")) {
@@ -1867,7 +1855,7 @@ void show_choose_zip_menu_second(const char *mount_point)
     char move[PATH_MAX];
     sprintf(confirm, "Yes - Install %s", basename(file));
     if (confirm_selection(confirm_install, confirm)) {
-	ui_print("Loading Scripts....\n");
+	ui_print("Loading RomSwitcher Scripts....\n");
 
 	int createvalue = 0;
 	int mountvalue = 0;
@@ -1936,7 +1924,6 @@ void show_rs_third()
                 break;
             case ITEM_ZIP_RS_EXT:
                 show_choose_zip_menu_third(extra_paths[chosen_item - 1]);
-		write_recovery_version();
                 break;
             case ITEM_REMOVE_RS:
                 if (confirm_selection( "Confirm remove?", "Yes - Remove 3rdROM")) {
@@ -1988,7 +1975,7 @@ void show_choose_zip_menu_third(const char *mount_point)
     char move[PATH_MAX];
     sprintf(confirm, "Yes - Install %s", basename(file));
     if (confirm_selection(confirm_install, confirm)) {
-        ui_print("Loading Scripts....\n");
+        ui_print("Loading RomSwitcher Scripts....\n");
         
         int createvalue = 0;
         int mountvalue = 0;
@@ -1996,123 +1983,6 @@ void show_choose_zip_menu_third(const char *mount_point)
         createvalue = __system("create_system.sh tertiary");
         if (createvalue == 0) {
             sprintf(mount, "update_mod.sh tertiary %s %s", mount_point, file);
-            mountvalue = __system(mount);
-            if (mountvalue == 0) {
-                install_zip(file);
-            } else {
-                ui_print("Something went wrong...\nPlease send me recovery.log\n");
-            }
-        } else {
-            ui_print("Cannot create system.img!\nMake sure you have enough space\n");
-        }
-	sprintf(move, "mv -f %s/rs/*.zip %s", mount_point, file);
-	__system(move);
-        __system("/sbin/mount_recovery.sh primary");
-    }
-}
-
-//Fourth Rom
-
-void show_rs_fourth()
-{
-    char buf[100];
-    int i = 0, chosen_item = 0;
-    static char* install_menu_items[MAX_NUM_MANAGED_VOLUMES + 1];
-    
-    char* primary_path = get_primary_storage_path();
-    char** extra_paths = get_extra_storage_paths();
-    int num_extra_volumes = get_num_extra_volumes();
-    
-    memset(install_menu_items, 0, MAX_NUM_MANAGED_VOLUMES + 1);
-    
-    static const char* headers[] = {  "RomSwitcher Fourth - Menu",
-        "",
-        NULL
-    };
-    
-    install_menu_items[0] = "install ZIP to 4thROM from internal SD";
-    
-    install_menu_items[1 + num_extra_volumes] = NULL;
-    
-    install_menu_items[2] = "remove 4thROM";
-    
-    install_menu_items[3] = "wipe data of 4thROM";
-    
-    install_menu_items[4] = "wipe cache of 4thROM";
-    
-    for (i = 0; i < num_extra_volumes; i++) {
-        install_menu_items[1 + i] = "install ZIP to 4thROM from external SD";
-    }
-    
-    for (;;)
-    {
-        chosen_item = get_menu_selection(headers, install_menu_items, 0, 0);
-        if (chosen_item == GO_BACK || chosen_item == REFRESH)
-            break;
-        switch (chosen_item)
-        {
-            case ITEM_ZIP_RS_INT:
-                show_choose_zip_menu_fourth(primary_path);
-                write_recovery_version();
-                break;
-            case ITEM_ZIP_RS_EXT:
-                show_choose_zip_menu_fourth(extra_paths[chosen_item - 1]);
-		write_recovery_version();
-                break;
-            case ITEM_REMOVE_RS:
-                if (confirm_selection( "Confirm remove?", "Yes - Remove 4thROM")) {
-		    __system("rm -rf /storage/sdcard1/romswitcher/.fourthrom");
-                    ui_print("4thROM removed.\n");
-                }
-                break;
-            case ITEM_WIPE_DATA_RS:
-                if (confirm_selection( "Confirm wipe?", "Yes - Wipe data of 4thROM")) {
-		    __system("rm -rf /storage/sdcard1/romswitcher/.fourthrom/data");
-		    __system("rm -rf /storage/sdcard1/romswitcher/.fourthrom/cache");
-                    ui_print("Data of 4thROM wiped.\n");
-                }
-                break;
-            case ITEM_WIPE_CACHE_RS:
-                if (confirm_selection( "Confirm wipe?", "Yes - Wipe cache of 4thROM")) {
-		    __system("rm -rf /storage/sdcard1/romswitcher/.fourthrom/cache");
-                    ui_print("Cache of 4thROM wiped.\n");
-                }
-                break;
-            default:
-                break;
-        }
-    }
-}
-
-void show_choose_zip_menu_fourth(const char *mount_point)
-{
-    if (ensure_path_mounted(mount_point) != 0) {
-        LOGE ("Can't mount %s\n", mount_point);
-        return;
-    }
-    
-    static const char* headers[] = {  "Choose a zip for 4thROM",
-        "",
-        NULL
-    };
-
-    char* file = choose_file_menu(mount_point, ".zip", headers);
-    if (file == NULL)
-        return;
-    static char* confirm_install  = "Confirm install?";
-    static char confirm[PATH_MAX];
-    char mount[PATH_MAX];
-    char move[PATH_MAX];
-    sprintf(confirm, "Yes - Install %s", basename(file));
-    if (confirm_selection(confirm_install, confirm)) {
-        ui_print("Loading Scripts....\n");
-        
-        int createvalue = 0;
-        int mountvalue = 0;
-        
-        createvalue = __system("create_system.sh quaternary");
-        if (createvalue == 0) {
-            sprintf(mount, "update_mod.sh quaternary %s %s", mount_point, file);
             mountvalue = __system(mount);
             if (mountvalue == 0) {
                 install_zip(file);

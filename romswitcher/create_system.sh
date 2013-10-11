@@ -27,23 +27,6 @@ elif [ $FILESYSTEM == "tertiary" ]; then
       $BB mke2fs -F -T ext4 $third || exit 1
    fi
 
-elif [ $FILESYSTEM == "quaternary" ]; then
-
-   if ! $BB grep -q /storage/sdcard1 /proc/mounts; then
-      $BB mkdir -p /storage/sdcard1
-      $BB mount -t auto -o rw /dev/block/mmcblk1p1 /storage/sdcard1 || exit 1
-   fi
-
-   $BB mkdir -p /storage/sdcard1/romswitcher/.fourthrom
-   fourth=/storage/sdcard1/romswitcher/.fourthrom/system.img
-
-   if $BB [ ! -f $fourth ] ; then
-	# create a file 2.5GB
-	$BB dd if=/dev/zero of=$fourth bs=2048 count=2572864 || exit 1
-	# create ext4 filesystem
-	$BB mke2fs -F -T ext4 $fourth || exit 1
-   fi
-
 fi
 
 exit 0
