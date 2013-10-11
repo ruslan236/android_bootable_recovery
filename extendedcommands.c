@@ -1728,9 +1728,9 @@ int show_rs_menu()
                                 NULL
     };
 
-    install_menu_items[0] = "2ndROM (internal SD)";
+    install_menu_items[0] = "2ndROM (internal SD 650MB)";
 
-    install_menu_items[1] = "3rdROM (internal SD)";
+    install_menu_items[1] = "3rdROM (internal SD 650MB)";
 
     for (;;)
     {
