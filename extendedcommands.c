@@ -1712,6 +1712,46 @@ int verify_root_and_recovery() {
     return ret;
 }
 
+//RS Menu
+
+#define ITEM_SECOND_ROM       0
+#define ITEM_THIRD_ROM        1
+
+int show_rs_menu()
+{
+
+    int i = 0, chosen_item = 0;
+    static char* install_menu_items[MAX_NUM_MANAGED_VOLUMES + 1];
+
+    static const char* headers[] = {  "RomSwitcher - Menu",
+                                "",
+                                NULL
+    };
+
+    install_menu_items[0] = "2ndROM (internal SD)";
+
+    install_menu_items[1] = "3rdROM (internal SD)";
+
+    for (;;)
+    {
+        chosen_item = get_menu_selection(headers, install_menu_items, 0, 0);
+        if (chosen_item == GO_BACK || chosen_item == REFRESH)
+            break;
+        switch (chosen_item)
+        {
+            case ITEM_SECOND_ROM:
+                show_rs_second();
+                break;
+	    case ITEM_THIRD_ROM:
+                show_rs_third();
+                break;
+            default:
+                break;
+        }
+    }
+    return chosen_item;
+}
+
 //Second Rom
 
 #define ITEM_ZIP_RS_INT       0
@@ -1720,7 +1760,7 @@ int verify_root_and_recovery() {
 #define ITEM_WIPE_DATA_RS     3
 #define ITEM_WIPE_CACHE_RS    4
 
-int show_rs_second_menu()
+void show_rs_second()
 {
     char buf[100];
     int i = 0, chosen_item = 0;
@@ -1792,7 +1832,6 @@ int show_rs_second_menu()
                 break;
         }
     }
-    return chosen_item;
 }
 
 void show_choose_zip_menu_second(const char *mount_point)
@@ -1841,7 +1880,7 @@ void show_choose_zip_menu_second(const char *mount_point)
 
 //Third Rom
 
-int show_rs_third_menu()
+void show_rs_third()
 {
     char buf[100];
     int i = 0, chosen_item = 0;
@@ -1913,7 +1952,6 @@ int show_rs_third_menu()
                 break;
         }
     }
-    return chosen_item;
 }
 
 void show_choose_zip_menu_third(const char *mount_point)

@@ -750,12 +750,8 @@ prompt_and_wait() {
                     ret = show_advanced_menu();
                     break;
 
-                case ITEM_RS_SECOND:
-                    ret = show_rs_second_menu();
-                    break;
-                    
-                case ITEM_RS_THIRD:
-                    ret = show_rs_third_menu();
+                case ITEM_RS_MENU:
+                    ret = show_rs_menu();
                     break;
 
                 case ITEM_POWER_OFF:
