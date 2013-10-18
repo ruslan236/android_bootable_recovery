@@ -67,6 +67,28 @@ elif [ "$1" == "tertiary" ] ; then
    $BB mkdir -p /system
    $MOUNT -t ext4 -o rw /.firstrom/media/.thirdrom/system.img /system
 
+elif [ "$1" == "quaternary" ] ; then
+   $UMOUNT /system
+   $UMOUNT /data
+   $UMOUNT /cache
+
+   $BB mkdir -p /.firstrom
+   $MOUNT -t ext4 -o rw /dev/block/$BLOCKDEVICE /.firstrom
+
+   $BB mkdir -p /data
+   $BB mkdir -p /.firstrom/media/.fourthrom/data
+   $MOUNT --bind /.firstrom/media/.fourthrom/data /data
+
+   $BB mkdir -p /cache
+   $BB mkdir -p /.firstrom/media/.fourthrom/cache
+   $MOUNT --bind /.firstrom/media/.fourthrom/cache /cache
+
+   $BB mkdir -p /data/media
+   $MOUNT --bind /.firstrom/media /data/media
+
+   $BB mkdir -p /system
+   $MOUNT -t ext4 -o rw /dev/block/$CACHEPARTITION /system
+
 else
    echo "missing paramter"
    exit 1
