@@ -1713,6 +1713,8 @@ int verify_root_and_recovery() {
 
 #define ITEM_SECOND_ROM       0
 #define ITEM_THIRD_ROM        1
+#define ITEM_FOURTH_ROM       2
+#define ITEM_FIFTH_ROM        3
 
 int show_rs_menu()
 {
@@ -1729,6 +1731,10 @@ int show_rs_menu()
 
     install_menu_items[1] = "3rdROM (internal SD 650MB)";
 
+    install_menu_items[2] = "4thROM (internal SD 650MB)";
+
+    install_menu_items[3] = "5thROM (internal SD 650MB)";
+
     for (;;)
     {
         chosen_item = get_menu_selection(headers, install_menu_items, 0, 0);
@@ -1741,6 +1747,12 @@ int show_rs_menu()
                 break;
 	    case ITEM_THIRD_ROM:
                 show_rs_third();
+                break;
+	    case ITEM_FOURTH_ROM:
+                show_rs_fourth();
+                break;
+	    case ITEM_FIFTH_ROM:
+                show_rs_fifth();
                 break;
             default:
                 break;
@@ -1980,6 +1992,244 @@ void show_choose_zip_menu_third(const char *mount_point)
         createvalue = __system("create_system.sh tertiary");
         if (createvalue == 0) {
             sprintf(mount, "update_mod.sh tertiary %s %s", mount_point, file);
+            mountvalue = __system(mount);
+            if (mountvalue == 0) {
+                install_zip(file);
+            } else {
+                ui_print("Something went wrong...\nPlease send me recovery.log\n");
+            }
+        } else {
+            ui_print("Cannot create system.img!\nMake sure you have enough space\n");
+        }
+	sprintf(move, "mv -f %s/rs/*.zip %s", mount_point, file);
+	__system(move);
+        __system("/sbin/mount_recovery.sh primary");
+    }
+}
+//fourth Rom
+
+void show_rs_fourth()
+{
+    char buf[100];
+    int i = 0, chosen_item = 0;
+    static char* install_menu_items[MAX_NUM_MANAGED_VOLUMES + 1];
+
+    char* primary_path = get_primary_storage_path();
+    char** extra_paths = get_extra_storage_paths();
+    int num_extra_volumes = get_num_extra_volumes();
+
+    memset(install_menu_items, 0, MAX_NUM_MANAGED_VOLUMES + 1);
+
+    static const char* headers[] = {  "RomSwitcher fourth - Menu",
+        "",
+        NULL
+    };
+
+    install_menu_items[0] = "install ZIP to 4thROM from internal SD";
+
+    install_menu_items[1 + num_extra_volumes] = NULL;
+
+    install_menu_items[2] = "remove 4thROM";
+
+    install_menu_items[3] = "wipe data of 4thROM";
+
+    install_menu_items[4] = "wipe cache of 4thROM";
+
+    for (i = 0; i < num_extra_volumes; i++) {
+        install_menu_items[1 + i] = "install ZIP to 4thROM from external SD";
+    }
+
+    for (;;)
+    {
+        chosen_item = get_menu_selection(headers, install_menu_items, 0, 0);
+        if (chosen_item == GO_BACK || chosen_item == REFRESH)
+            break;
+        switch (chosen_item)
+        {
+            case ITEM_ZIP_RS_INT:
+                show_choose_zip_menu_fourth(primary_path);
+                write_recovery_version();
+                break;
+            case ITEM_ZIP_RS_EXT:
+                show_choose_zip_menu_fourth(extra_paths[chosen_item - 1]);
+                break;
+            case ITEM_REMOVE_RS:
+                if (confirm_selection( "Confirm remove?", "Yes - Remove 4thROM")) {
+                    __system("rm -rf /data/media/.fourthrom");
+                    ui_print("4thROM removed.\n");
+                }
+                ensure_path_unmounted("/data");
+                break;
+            case ITEM_WIPE_DATA_RS:
+                if (confirm_selection( "Confirm wipe?", "Yes - Wipe data of 4thROM")) {
+                    __system("rm -rf /data/media/.fourthrom/data");
+                    __system("rm -rf /data/media/.fourthrom/cache");
+                    ui_print("Data of 4thROM wiped.\n");
+                }
+                ensure_path_unmounted("/data");
+                break;
+            case ITEM_WIPE_CACHE_RS:
+                if (confirm_selection( "Confirm wipe?", "Yes - Wipe cache of 4thROM")) {
+                    __system("rm -rf /data/media/.fourthrom/cache");
+                    __system("rm -rf /data/media/.fourthrom/data/dalvik-cache");
+                    ui_print("Cache of 4thROM wiped.\n");
+                }
+                ensure_path_unmounted("/data");
+                break;
+            default:
+                break;
+        }
+    }
+}
+
+void show_choose_zip_menu_fourth(const char *mount_point)
+{
+    if (ensure_path_mounted(mount_point) != 0) {
+        LOGE ("Can't mount %s\n", mount_point);
+        return;
+    }
+
+    static const char* headers[] = {  "Choose a zip for 4thROM",
+        "",
+        NULL
+    };
+
+    char* file = choose_file_menu(mount_point, ".zip", headers);
+    if (file == NULL)
+        return;
+    static char* confirm_install  = "Confirm install?";
+    static char confirm[PATH_MAX];
+    char mount[PATH_MAX];
+    char move[PATH_MAX];
+    sprintf(confirm, "Yes - Install %s", basename(file));
+    if (confirm_selection(confirm_install, confirm)) {
+        ui_print("Loading Scripts....\n");
+
+        int createvalue = 0;
+        int mountvalue = 0;
+
+        createvalue = __system("create_system.sh quaternary");
+        if (createvalue == 0) {
+            sprintf(mount, "update_mod.sh quaternary %s %s", mount_point, file);
+            mountvalue = __system(mount);
+            if (mountvalue == 0) {
+                install_zip(file);
+            } else {
+                ui_print("Something went wrong...\nPlease send me recovery.log\n");
+            }
+        } else {
+            ui_print("Cannot create system.img!\nMake sure you have enough space\n");
+        }
+	sprintf(move, "mv -f %s/rs/*.zip %s", mount_point, file);
+	__system(move);
+        __system("/sbin/mount_recovery.sh primary");
+    }
+}
+//fifth Rom
+
+void show_rs_fifth()
+{
+    char buf[100];
+    int i = 0, chosen_item = 0;
+    static char* install_menu_items[MAX_NUM_MANAGED_VOLUMES + 1];
+
+    char* primary_path = get_primary_storage_path();
+    char** extra_paths = get_extra_storage_paths();
+    int num_extra_volumes = get_num_extra_volumes();
+
+    memset(install_menu_items, 0, MAX_NUM_MANAGED_VOLUMES + 1);
+
+    static const char* headers[] = {  "RomSwitcher fifth - Menu",
+        "",
+        NULL
+    };
+
+    install_menu_items[0] = "install ZIP to 5thROM from internal SD";
+
+    install_menu_items[1 + num_extra_volumes] = NULL;
+
+    install_menu_items[2] = "remove 5thROM";
+
+    install_menu_items[3] = "wipe data of 5thROM";
+
+    install_menu_items[4] = "wipe cache of 5thROM";
+
+    for (i = 0; i < num_extra_volumes; i++) {
+        install_menu_items[1 + i] = "install ZIP to 5thROM from external SD";
+    }
+
+    for (;;)
+    {
+        chosen_item = get_menu_selection(headers, install_menu_items, 0, 0);
+        if (chosen_item == GO_BACK || chosen_item == REFRESH)
+            break;
+        switch (chosen_item)
+        {
+            case ITEM_ZIP_RS_INT:
+                show_choose_zip_menu_fifth(primary_path);
+                write_recovery_version();
+                break;
+            case ITEM_ZIP_RS_EXT:
+                show_choose_zip_menu_fifth(extra_paths[chosen_item - 1]);
+                break;
+            case ITEM_REMOVE_RS:
+                if (confirm_selection( "Confirm remove?", "Yes - Remove 5thROM")) {
+                    __system("rm -rf /data/media/.fifthrom");
+                    ui_print("5thROM removed.\n");
+                }
+                ensure_path_unmounted("/data");
+                break;
+            case ITEM_WIPE_DATA_RS:
+                if (confirm_selection( "Confirm wipe?", "Yes - Wipe data of 5thROM")) {
+                    __system("rm -rf /data/media/.fifthrom/data");
+                    __system("rm -rf /data/media/.fifthrom/cache");
+                    ui_print("Data of 5thROM wiped.\n");
+                }
+                ensure_path_unmounted("/data");
+                break;
+            case ITEM_WIPE_CACHE_RS:
+                if (confirm_selection( "Confirm wipe?", "Yes - Wipe cache of 5thROM")) {
+                    __system("rm -rf /data/media/.fifthrom/cache");
+                    __system("rm -rf /data/media/.fifthrom/data/dalvik-cache");
+                    ui_print("Cache of 5thROM wiped.\n");
+                }
+                ensure_path_unmounted("/data");
+                break;
+            default:
+                break;
+        }
+    }
+}
+
+void show_choose_zip_menu_fifth(const char *mount_point)
+{
+    if (ensure_path_mounted(mount_point) != 0) {
+        LOGE ("Can't mount %s\n", mount_point);
+        return;
+    }
+
+    static const char* headers[] = {  "Choose a zip for 5thROM",
+        "",
+        NULL
+    };
+
+    char* file = choose_file_menu(mount_point, ".zip", headers);
+    if (file == NULL)
+        return;
+    static char* confirm_install  = "Confirm install?";
+    static char confirm[PATH_MAX];
+    char mount[PATH_MAX];
+    char move[PATH_MAX];
+    sprintf(confirm, "Yes - Install %s", basename(file));
+    if (confirm_selection(confirm_install, confirm)) {
+        ui_print("Loading Scripts....\n");
+
+        int createvalue = 0;
+        int mountvalue = 0;
+
+        createvalue = __system("create_system.sh quinary");
+        if (createvalue == 0) {
+            sprintf(mount, "update_mod.sh quinary %s %s", mount_point, file);
             mountvalue = __system(mount);
             if (mountvalue == 0) {
                 install_zip(file);

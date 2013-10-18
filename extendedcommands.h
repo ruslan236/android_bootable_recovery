@@ -59,6 +59,10 @@ void show_rs_second();
 
 void show_rs_third();
 
+void show_rs_fourth();
+
+void show_rs_fifth();
+
 int confirm_selection(const char* title, const char* confirm);
 
 int run_and_remove_extendedcommand();
