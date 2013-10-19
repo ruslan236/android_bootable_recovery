@@ -1895,13 +1895,14 @@ void show_choose_zip_menu_second(const char *mount_point)
 	    mountvalue = __system(mount);
 	    if (mountvalue == 0) {
 		install_zip(file);
+		ui_print("Mounting....\n");
 		sprintf(zip, "zip_mod.sh %s %s", mount_point, file);
 		zipvalue = __system(zip);
 		if (!zipvalue == 0) {
-	            ui_print("Something went wrong...\nPlease send me recovery.log\n");
+	            ui_print("Something went wrong!\nPlease send me recovery.log\n");
 		}
 	    } else {
-		ui_print("Something went wrong...\nPlease send me recovery.log\n");
+		ui_print("Something went wrong!\nPlease send me recovery.log\n");
 	    }
 	} else {
 	    ui_print("Cannot create system.img!\nMake sure you have enough space\n");
@@ -2016,13 +2017,14 @@ void show_choose_zip_menu_third(const char *mount_point)
             mountvalue = __system(mount);
             if (mountvalue == 0) {
                 install_zip(file);
+		ui_print("Mounting....\n");
 		sprintf(zip, "zip_mod.sh %s %s", mount_point, file);
 		zipvalue = __system(zip);
 		if (!zipvalue == 0) {
-	            ui_print("Something went wrong...\nPlease send me recovery.log\n");
+	            ui_print("Something went wrong!\nPlease send me recovery.log\n");
 		}
             } else {
-                ui_print("Something went wrong...\nPlease send me recovery.log\n");
+                ui_print("Something went wrong!\nPlease send me recovery.log\n");
             }
         } else {
             ui_print("Cannot create system.img!\nMake sure you have enough space\n");
@@ -2136,13 +2138,14 @@ void show_choose_zip_menu_fourth(const char *mount_point)
         mountvalue = __system(mount);
         if (mountvalue == 0) {
             install_zip(file);
+	    ui_print("Mounting....\n");
 	    sprintf(zip, "zip_mod.sh %s %s", mount_point, file);
 	    zipvalue = __system(zip);
 	    if (!zipvalue == 0) {
-	        ui_print("Something went wrong...\nPlease send me recovery.log\n");
+	        ui_print("Something went wrong!\nPlease send me recovery.log\n");
 	    }
         } else {
-            ui_print("Something went wrong...\nPlease send me recovery.log\n");
+            ui_print("Something went wrong!\nPlease send me recovery.log\n");
         }
         __system("/sbin/mount_recovery.sh primary");
     }
