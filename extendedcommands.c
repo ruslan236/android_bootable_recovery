@@ -1882,13 +1882,12 @@ void show_choose_zip_menu_second(const char *mount_point)
     static char* confirm_install  = "Confirm install?";
     static char confirm[PATH_MAX];
     char mount[PATH_MAX];
-    char move[PATH_MAX];
+    char zip[PATH_MAX];
     sprintf(confirm, "Yes - Install %s", basename(file));
     if (confirm_selection(confirm_install, confirm)) {
 	ui_print("Loading Scripts....\n");
 
-	int createvalue = 0;
-	int mountvalue = 0;
+	int createvalue = 0, mountvalue = 0, zipvalue = 0;
 
 	createvalue = __system("create_system.sh secondary");
 	if (createvalue == 0) {
@@ -1896,15 +1895,18 @@ void show_choose_zip_menu_second(const char *mount_point)
 	    mountvalue = __system(mount);
 	    if (mountvalue == 0) {
 		install_zip(file);
+		sprintf(zip, "zip_mod.sh %s %s", mount_point, file);
+		zipvalue = __system(zip);
+		if (!zipvalue == 0) {
+	            ui_print("Something went wrong...\nPlease send me recovery.log\n");
+		}
 	    } else {
 		ui_print("Something went wrong...\nPlease send me recovery.log\n");
 	    }
 	} else {
 	    ui_print("Cannot create system.img!\nMake sure you have enough space\n");
 	}
-	sprintf(move, "mv -f %s/rs/*.zip %s", mount_point, file);
-	__system(move);
-	__system("/sbin/mount_recovery.sh primary");
+        __system("/sbin/mount_recovery.sh primary");
     }
 }
 
@@ -2001,13 +2003,12 @@ void show_choose_zip_menu_third(const char *mount_point)
     static char* confirm_install  = "Confirm install?";
     static char confirm[PATH_MAX];
     char mount[PATH_MAX];
-    char move[PATH_MAX];
+    char zip[PATH_MAX];
     sprintf(confirm, "Yes - Install %s", basename(file));
     if (confirm_selection(confirm_install, confirm)) {
         ui_print("Loading Scripts....\n");
         
-        int createvalue = 0;
-        int mountvalue = 0;
+        int createvalue = 0, mountvalue = 0, zipvalue = 0;
         
         createvalue = __system("create_system.sh tertiary");
         if (createvalue == 0) {
@@ -2015,14 +2016,17 @@ void show_choose_zip_menu_third(const char *mount_point)
             mountvalue = __system(mount);
             if (mountvalue == 0) {
                 install_zip(file);
+		sprintf(zip, "zip_mod.sh %s %s", mount_point, file);
+		zipvalue = __system(zip);
+		if (!zipvalue == 0) {
+	            ui_print("Something went wrong...\nPlease send me recovery.log\n");
+		}
             } else {
                 ui_print("Something went wrong...\nPlease send me recovery.log\n");
             }
         } else {
             ui_print("Cannot create system.img!\nMake sure you have enough space\n");
         }
-	sprintf(move, "mv -f %s/rs/*.zip %s", mount_point, file);
-	__system(move);
         __system("/sbin/mount_recovery.sh primary");
     }
 }
@@ -2121,24 +2125,25 @@ void show_choose_zip_menu_fourth(const char *mount_point)
     static char* confirm_install  = "Confirm install?";
     static char confirm[PATH_MAX];
     char mount[PATH_MAX];
-    char move[PATH_MAX];
+    char zip[PATH_MAX];
     sprintf(confirm, "Yes - Install %s", basename(file));
     if (confirm_selection(confirm_install, confirm)) {
         ui_print("Loading Scripts....\n");
         
-        int createvalue = 0;
-        int mountvalue = 0;
+        int createvalue = 0, mountvalue = 0, zipvalue = 0;
 
         sprintf(mount, "update_mod.sh quaternary %s %s", mount_point, file);
         mountvalue = __system(mount);
         if (mountvalue == 0) {
             install_zip(file);
+	    sprintf(zip, "zip_mod.sh %s %s", mount_point, file);
+	    zipvalue = __system(zip);
+	    if (!zipvalue == 0) {
+	        ui_print("Something went wrong...\nPlease send me recovery.log\n");
+	    }
         } else {
             ui_print("Something went wrong...\nPlease send me recovery.log\n");
         }
-
-	sprintf(move, "mv -f %s/rs/*.zip %s", mount_point, file);
-	__system(move);
         __system("/sbin/mount_recovery.sh primary");
     }
 }
