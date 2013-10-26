@@ -8,9 +8,10 @@ BB="busybox"
 MOUNT="busybox mount"
 UMOUNT="busybox umount -f"
 
-BLOCKDEVICE=mmcblk0p37 #data
-CACHEPARTITION=mmcblk0p36 #cache
-SYSTEMPARTITION=mmcblk0p35 #system
+OMAP=platform/omap/omap_hsmmc.0/by-name
+BLOCKDEVICE=$OMAP/userdata #data
+CACHEPARTITION=$OMAP/cache #cache
+SYSTEMPARTITION=$OMAP/system #system
 
 ########## if called with umount parameter, just umount everything and exit ######################
 if [ "$1" == "primary" ] ; then
