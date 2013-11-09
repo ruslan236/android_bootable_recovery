@@ -258,8 +258,8 @@ static void draw_text_line(int row, const char* t, int align) {
                 col = gr_fb_width() - length - 1;
                 break;
         }
-        gr_text(0, (row+1)*CHAR_HEIGHT-1, t, 0);
-		//gr_text(col, (row+1)*CHAR_HEIGHT-(CHAR_HEIGHT-BOARD_RECOVERY_CHAR_HEIGHT)/2-1, t);
+        gr_text(col, (row+1)*CHAR_HEIGHT-1, t, 0);
+	//gr_text(col, (row+1)*CHAR_HEIGHT-(CHAR_HEIGHT-BOARD_RECOVERY_CHAR_HEIGHT)/2-1, t);
     }
 }
 
