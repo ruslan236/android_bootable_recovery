@@ -84,9 +84,7 @@ fi
 
 sed 's|package_extract_file("boot.img", "/dev/block/platform/omap/omap_hsmmc.0/by-name/boot");|#|g' -i "$MOUNTPOINT"/rs/$updater_script_path || exit 1
 sed 's|run_program("/sbin/busybox", "mount", "/cache");|#|g' -i "$MOUNTPOINT"/rs/$updater_script_path || exit 1
-sed 's|assert(getprop("ro.product.device") == "maguro" \|\| getprop("ro.build.product") == "maguro");|#|g' -i "$MOUNTPOINT"/rs/$updater_script_path || exit 1
-sed 's|assert(getprop("ro.product.device") == "toro" \|\| getprop("ro.build.product") == "toro");|#|g' -i "$MOUNTPOINT"/rs/$updater_script_path || exit 1
-sed 's|assert(getprop("ro.product.device") == "toroplus" \|\| getprop("ro.build.product") == "toroplus");|#|g' -i "$MOUNTPOINT"/rs/$updater_script_path || exit 1
+sed -i s/.*getprop.*/#/ "$MOUNTPOINT"/rs/$updater_script_path || exit 1
 
 cp -f $FILE $MOUNTPOINT/rs
 cd $MOUNTPOINT/rs
