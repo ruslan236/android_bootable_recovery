@@ -49,7 +49,7 @@
 #include "compact_loki.h"
 #endif
 
-int signature_check_enabled = 0;
+int signature_check_enabled = 1;
 #ifdef ENABLE_LOKI
 int loki_support_enabled = 1;
 #endif
@@ -105,6 +105,27 @@ void write_recovery_version() {
     ignore_data_media_workaround(0);
 }
 
+static void write_last_install_path(const char* install_path) {
+    char path[PATH_MAX];
+    sprintf(path, "%s%sclockworkmod/.last_install_path", get_primary_storage_path(), (is_data_media() ? "/0/" : "/"));
+    write_string_to_file(path, install_path);
+}
+
+const char* read_last_install_path() {
+    char path[PATH_MAX];
+    sprintf(path, "%s%sclockworkmod/.last_install_path", get_primary_storage_path(), (is_data_media() ? "/0/" : "/"));
+
+    ensure_path_mounted(path);
+    FILE *f = fopen(path, "r");
+    if (f != NULL) {
+        fgets(path, PATH_MAX, f);
+        fclose(f);
+
+        return path;
+    }
+    return NULL;
+}
+
 void
 toggle_signature_check()
 {
@@ -137,9 +158,8 @@ int install_zip(const char* packagefilepath)
 #ifdef ENABLE_LOKI
     if(loki_support_enabled) {
        ui_print("Checking if loki-fying is needed");
-       int result;
-       if(result = loki_check()) {
-           return result;
+       if (loki_check() != 0) {
+           return 1;
        }
     }
 #endif
@@ -148,62 +168,74 @@ int install_zip(const char* packagefilepath)
     return 0;
 }
 
-#define ITEM_CHOOSE_ZIP       0
-#define ITEM_APPLY_SIDELOAD   1
-#define ITEM_SIG_CHECK        2
-#define ITEM_CHOOSE_ZIP_INT   3
+// top fixed menu items, those before extra storage volumes
+#define FIXED_TOP_INSTALL_ZIP_MENUS 1
+// bottom fixed menu items, those after extra storage volumes
+#define FIXED_BOTTOM_INSTALL_ZIP_MENUS 3
+#define FIXED_INSTALL_ZIP_MENUS (FIXED_TOP_INSTALL_ZIP_MENUS + FIXED_BOTTOM_INSTALL_ZIP_MENUS)
 
 int show_install_update_menu()
 {
     char buf[100];
     int i = 0, chosen_item = 0;
-    static char* install_menu_items[MAX_NUM_MANAGED_VOLUMES + 3];
+    static char* install_menu_items[MAX_NUM_MANAGED_VOLUMES + FIXED_INSTALL_ZIP_MENUS + 1];
 
     char* primary_path = get_primary_storage_path();
     char** extra_paths = get_extra_storage_paths();
     int num_extra_volumes = get_num_extra_volumes();
 
-    memset(install_menu_items, 0, MAX_NUM_MANAGED_VOLUMES + 3);
+    memset(install_menu_items, 0, MAX_NUM_MANAGED_VOLUMES + FIXED_INSTALL_ZIP_MENUS + 1);
 
     static const char* headers[] = {  "Install update from zip file",
                                 "",
                                 NULL
     };
 
+    // FIXED_TOP_INSTALL_ZIP_MENUS
     sprintf(buf, "choose zip from %s", primary_path);
     install_menu_items[0] = strdup(buf);
 
-    install_menu_items[1] = "install zip from sideload";
-
-    install_menu_items[2] = "toggle signature verification";
-
-    install_menu_items[3 + num_extra_volumes] = NULL;
-
+    // extra storage volumes (vold managed)
     for (i = 0; i < num_extra_volumes; i++) {
         sprintf(buf, "choose zip from %s", extra_paths[i]);
-        install_menu_items[3 + i] = strdup(buf);
+        install_menu_items[FIXED_TOP_INSTALL_ZIP_MENUS + i] = strdup(buf);
     }
+
+    // FIXED_BOTTOM_INSTALL_ZIP_MENUS
+    install_menu_items[FIXED_TOP_INSTALL_ZIP_MENUS + num_extra_volumes]     = "choose zip from last install folder";
+    install_menu_items[FIXED_TOP_INSTALL_ZIP_MENUS + num_extra_volumes + 1] = "install zip from sideload";
+    install_menu_items[FIXED_TOP_INSTALL_ZIP_MENUS + num_extra_volumes + 2] = "toggle signature verification";
+
+    // extra NULL for GO_BACK
+    install_menu_items[FIXED_TOP_INSTALL_ZIP_MENUS + num_extra_volumes + 3] = NULL;
 
     for (;;)
     {
         chosen_item = get_menu_selection(headers, install_menu_items, 0, 0);
-        switch (chosen_item)
-        {
-            case ITEM_SIG_CHECK:
-                toggle_signature_check();
-                break;
-            case ITEM_CHOOSE_ZIP:
+        if (chosen_item == 0) {
+            show_choose_zip_menu(primary_path);
+        }
+        else if (chosen_item >= FIXED_TOP_INSTALL_ZIP_MENUS &&
+                    chosen_item < FIXED_TOP_INSTALL_ZIP_MENUS + num_extra_volumes) {
+            show_choose_zip_menu(extra_paths[chosen_item - FIXED_TOP_INSTALL_ZIP_MENUS]);
+        }
+        else if (chosen_item == FIXED_TOP_INSTALL_ZIP_MENUS + num_extra_volumes) {
+            char *last_path_used;
+            last_path_used = read_last_install_path();
+            if (last_path_used == NULL)
                 show_choose_zip_menu(primary_path);
-                break;
-            case ITEM_APPLY_SIDELOAD:
-                apply_from_adb();
-                break;
-            default:
-                if (chosen_item >= ITEM_CHOOSE_ZIP_INT) {
-                    show_choose_zip_menu(extra_paths[chosen_item - 3]);
-                } else {
-                    goto out;
-                }
+            else
+                show_choose_zip_menu(last_path_used);
+        }
+        else if (chosen_item == FIXED_TOP_INSTALL_ZIP_MENUS + num_extra_volumes + 1) {
+            apply_from_adb();
+        }
+        else if (chosen_item == FIXED_TOP_INSTALL_ZIP_MENUS + num_extra_volumes + 2) {
+            toggle_signature_check();
+        }
+        else {
+            // GO_BACK or REFRESH (chosen_item < 0)
+            goto out;
         }
     }
 out:
@@ -211,7 +243,7 @@ out:
     free(install_menu_items[0]);
     if (extra_paths != NULL) {
         for (i = 0; i < num_extra_volumes; i++)
-            free(install_menu_items[3 + i]);
+            free(install_menu_items[FIXED_TOP_INSTALL_ZIP_MENUS + i]);
     }
     return chosen_item;
 }
@@ -438,8 +470,11 @@ void show_choose_zip_menu(const char *mount_point)
     static char* confirm_install  = "Confirm install?";
     static char confirm[PATH_MAX];
     sprintf(confirm, "Yes - Install %s", basename(file));
-    if (confirm_selection(confirm_install, confirm))
+
+    if (confirm_selection(confirm_install, confirm)) {
         install_zip(file);
+        write_last_install_path(dirname(file));
+    }
 }
 
 void show_nandroid_restore_menu(const char* path)
@@ -720,9 +755,8 @@ int format_unknown_device(const char *device, const char* path, const char *fs_t
 
     static char tmp[PATH_MAX];
     if (strcmp(path, "/data") == 0) {
-        //sprintf(tmp, "cd /data ; for f in $(ls -a | grep -v ^media$); do rm -rf $f; done");
-        //__system(tmp);
-		__system("cd /data ; for f in $(ls -a | grep -v '^media$'); do rm -rf \"$f\"; done");
+        sprintf(tmp, "cd /data ; for f in $(ls -a | grep -v ^media$); do rm -rf $f; done");
+        __system(tmp);
         // if the /data/media sdcard has already been migrated for android 4.2,
         // prevent the migration from happening again by writing the .layout_version
         struct stat st;
@@ -742,9 +776,9 @@ int format_unknown_device(const char *device, const char* path, const char *fs_t
         }
     }
     else {
-        sprintf(tmp, "rm -rf ""%s/*""", path);
+        sprintf(tmp, "rm -rf %s/*", path);
         __system(tmp);
-        sprintf(tmp, "rm -rf ""%s/.*""", path);
+        sprintf(tmp, "rm -rf %s/.*", path);
         __system(tmp);
     }
 
@@ -898,8 +932,10 @@ int show_partition_menu()
 
             if (is_path_mounted(e->path))
             {
+                ignore_data_media_workaround(1);
                 if (0 != ensure_path_unmounted(e->path))
                     ui_print("Error unmounting %s!\n", e->path);
+                ignore_data_media_workaround(0);
             }
             else
             {
@@ -1168,11 +1204,7 @@ int show_nandroid_menu()
                         // /emmc/clockworkmod/backup/%F.%H.%M.%S (time values are populated too)
                         sprintf(backup_path, "%s/%s", chosen_path, path_fmt);
                     }
-					ui_print("to:%s\n", backup_path);
-                    if (confirm_selection( "Confirm backup?", "Yes - Backup"))
-                    {
-						nandroid_backup(backup_path);
-					}
+                    nandroid_backup(backup_path);
                 }
                 break;
             case 1:
@@ -1557,7 +1589,6 @@ void create_fstab()
     write_fstab_root("/sdcard", file);
     write_fstab_root("/sd-ext", file);
     write_fstab_root("/external_sd", file);
-	write_fstab_root("/preload", file);
     fclose(file);
     LOGI("Completed outputting fstab.\n");
 }
@@ -1674,8 +1705,6 @@ int volume_main(int argc, char **argv) {
 }
 
 int verify_root_and_recovery() {
-    write_recovery_version();
-
     if (ensure_path_mounted("/system") != 0)
         return 0;
 
@@ -1739,18 +1768,18 @@ int verify_root_and_recovery() {
 
 //RS Menu
 
-#define ITEM_SECOND_ROM       0
-#define ITEM_THIRD_ROM        1
-#define ITEM_FOURTH_ROM       2
-#define ITEM_FIFTH_ROM        3
+#define ITEM_SECOND_ROM 0
+#define ITEM_THIRD_ROM 1
+#define ITEM_FOURTH_ROM 2
+#define ITEM_FIFTH_ROM 3
 
-int show_rs_menu()
+int show_romswitcher_menu()
 {
 
     int i = 0, chosen_item = 0;
     static char* install_menu_items[MAX_NUM_MANAGED_VOLUMES + 1];
 
-    static const char* headers[] = {  "RomSwitcher - Menu",
+    static const char* headers[] = { "RomSwitcher - Menu",
                                 "",
                                 NULL
     };
@@ -1773,13 +1802,13 @@ int show_rs_menu()
             case ITEM_SECOND_ROM:
                 show_rs_second();
                 break;
-	    case ITEM_THIRD_ROM:
+         case ITEM_THIRD_ROM:
                 show_rs_third();
                 break;
-	    case ITEM_FOURTH_ROM:
+         case ITEM_FOURTH_ROM:
                 show_rs_fourth();
                 break;
-	    case ITEM_FIFTH_ROM:
+         case ITEM_FIFTH_ROM:
                 show_rs_fifth();
                 break;
             default:
@@ -1791,10 +1820,10 @@ int show_rs_menu()
 
 //Second Rom
 
-#define ITEM_ZIP_RS_INT       0
-#define ITEM_REMOVE_RS        1
-#define ITEM_WIPE_DATA_RS     2
-#define ITEM_WIPE_CACHE_RS    3
+#define ITEM_ZIP_RS_INT 0
+#define ITEM_REMOVE_RS 1
+#define ITEM_WIPE_DATA_RS 2
+#define ITEM_WIPE_CACHE_RS 3
 
 void show_rs_second()
 {
@@ -1806,7 +1835,7 @@ void show_rs_second()
 
     memset(install_menu_items, 0, MAX_NUM_MANAGED_VOLUMES + 3);
 
-    static const char* headers[] = {  "RomSwitcher Second - Menu",
+    static const char* headers[] = { "RomSwitcher Second - Menu",
                                 "",
                                 NULL
     };
@@ -1865,7 +1894,7 @@ void show_choose_zip_menu_second(const char *mount_point)
         return;
     }
 
-    static const char* headers[] = {  "Choose a zip for 2ndrom",
+    static const char* headers[] = { "Choose a zip for 2ndrom",
                                 "",
                                 NULL
     };
@@ -1873,32 +1902,32 @@ void show_choose_zip_menu_second(const char *mount_point)
     char* file = choose_file_menu(mount_point, ".zip", headers);
     if (file == NULL)
         return;
-    static char* confirm_install  = "Confirm install?";
+    static char* confirm_install = "Confirm install?";
     static char confirm[PATH_MAX];
     char mount[PATH_MAX];
     char move[PATH_MAX];
     sprintf(confirm, "Yes - Install %s", basename(file));
     if (confirm_selection(confirm_install, confirm)) {
-	ui_print("Loading Scripts....\n");
+        ui_print("Loading Scripts....\n");
 
-	int createvalue = 0;
-	int mountvalue = 0;
+        int createvalue = 0;
+        int mountvalue = 0;
 
-	createvalue = __system("create_system.sh secondary");
-	if (createvalue == 0) {
-	    sprintf(mount, "update_mod.sh secondary %s %s", mount_point, file);
-	    mountvalue = __system(mount);
-	    if (mountvalue == 0) {
-		install_zip(file);
-	    } else {
-		ui_print("Something went wrong...\nPlease send me recovery.log\n");
-	    }
-	} else {
-	    ui_print("Cannot create system.img!\nMake sure you have enough space\n");
-	}
-	sprintf(move, "mv -f %s/rs/*.zip %s", mount_point, file);
-	__system(move);
-	__system("/sbin/mount_recovery.sh primary");
+        createvalue = __system("create_system.sh secondary");
+        if (createvalue == 0) {
+         sprintf(mount, "update_mod.sh secondary %s %s", mount_point, file);
+         mountvalue = __system(mount);
+         if (mountvalue == 0) {
+                install_zip(file);
+         } else {
+                ui_print("Something went wrong...\nPlease send me recovery.log\n");
+         }
+        } else {
+         ui_print("Cannot create system.img!\nMake sure you have enough space\n");
+        }
+        sprintf(move, "mv -f %s/rs/*.zip %s", mount_point, file);
+        __system(move);
+        __system("/sbin/mount_recovery.sh primary");
     }
 }
 
@@ -1914,7 +1943,7 @@ void show_rs_third()
     
     memset(install_menu_items, 0, MAX_NUM_MANAGED_VOLUMES + 3);
     
-    static const char* headers[] = {  "RomSwitcher Third - Menu",
+    static const char* headers[] = { "RomSwitcher Third - Menu",
         "",
         NULL
     };
@@ -1973,7 +2002,7 @@ void show_choose_zip_menu_third(const char *mount_point)
         return;
     }
     
-    static const char* headers[] = {  "Choose a zip for 3rdROM",
+    static const char* headers[] = { "Choose a zip for 3rdROM",
         "",
         NULL
     };
@@ -1981,7 +2010,7 @@ void show_choose_zip_menu_third(const char *mount_point)
     char* file = choose_file_menu(mount_point, ".zip", headers);
     if (file == NULL)
         return;
-    static char* confirm_install  = "Confirm install?";
+    static char* confirm_install = "Confirm install?";
     static char confirm[PATH_MAX];
     char mount[PATH_MAX];
     char move[PATH_MAX];
@@ -2004,8 +2033,8 @@ void show_choose_zip_menu_third(const char *mount_point)
         } else {
             ui_print("Cannot create system.img!\nMake sure you have enough space\n");
         }
-	sprintf(move, "mv -f %s/rs/*.zip %s", mount_point, file);
-	__system(move);
+        sprintf(move, "mv -f %s/rs/*.zip %s", mount_point, file);
+        __system(move);
         __system("/sbin/mount_recovery.sh primary");
     }
 }
@@ -2021,7 +2050,7 @@ void show_rs_fourth()
 
     memset(install_menu_items, 0, MAX_NUM_MANAGED_VOLUMES + 3);
 
-    static const char* headers[] = {  "RomSwitcher Fourth - Menu",
+    static const char* headers[] = { "RomSwitcher Fourth - Menu",
         "",
         NULL
     };
@@ -2080,7 +2109,7 @@ void show_choose_zip_menu_fourth(const char *mount_point)
         return;
     }
 
-    static const char* headers[] = {  "Choose a zip for 4thROM",
+    static const char* headers[] = { "Choose a zip for 4thROM",
         "",
         NULL
     };
@@ -2088,7 +2117,7 @@ void show_choose_zip_menu_fourth(const char *mount_point)
     char* file = choose_file_menu(mount_point, ".zip", headers);
     if (file == NULL)
         return;
-    static char* confirm_install  = "Confirm install?";
+    static char* confirm_install = "Confirm install?";
     static char confirm[PATH_MAX];
     char mount[PATH_MAX];
     char move[PATH_MAX];
@@ -2111,8 +2140,8 @@ void show_choose_zip_menu_fourth(const char *mount_point)
         } else {
             ui_print("Cannot create system.img!\nMake sure you have enough space\n");
         }
-	sprintf(move, "mv -f %s/rs/*.zip %s", mount_point, file);
-	__system(move);
+        sprintf(move, "mv -f %s/rs/*.zip %s", mount_point, file);
+        __system(move);
         __system("/sbin/mount_recovery.sh primary");
     }
 }
@@ -2128,7 +2157,7 @@ void show_rs_fifth()
 
     memset(install_menu_items, 0, MAX_NUM_MANAGED_VOLUMES + 3);
 
-    static const char* headers[] = {  "RomSwitcher Fifth - Menu",
+    static const char* headers[] = { "RomSwitcher Fifth - Menu",
         "",
         NULL
     };
@@ -2188,7 +2217,7 @@ void show_choose_zip_menu_fifth(const char *mount_point)
         return;
     }
 
-    static const char* headers[] = {  "Choose a zip for 5thROM",
+    static const char* headers[] = { "Choose a zip for 5thROM",
         "",
         NULL
     };
@@ -2196,7 +2225,7 @@ void show_choose_zip_menu_fifth(const char *mount_point)
     char* file = choose_file_menu(mount_point, ".zip", headers);
     if (file == NULL)
         return;
-    static char* confirm_install  = "Confirm install?";
+    static char* confirm_install = "Confirm install?";
     static char confirm[PATH_MAX];
     char mount[PATH_MAX];
     char move[PATH_MAX];
@@ -2219,9 +2248,8 @@ void show_choose_zip_menu_fifth(const char *mount_point)
         } else {
             ui_print("Cannot create system.img!\nMake sure you have enough space\n");
         }
-	sprintf(move, "mv -f %s/rs/*.zip %s", mount_point, file);
-	__system(move);
+        sprintf(move, "mv -f %s/rs/*.zip %s", mount_point, file);
+        __system(move);
         __system("/sbin/mount_recovery.sh primary");
     }
 }
-

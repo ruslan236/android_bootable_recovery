@@ -34,8 +34,6 @@ __system(const char *command);
 int
 show_advanced_menu();
 
-int show_install_update_menu();
-
 int format_device(const char *device, const char *path, const char *fs_type);
 
 int format_unknown_device(const char *device, const char* path, const char *fs_type);
@@ -50,21 +48,15 @@ void process_volumes();
 
 int extendedcommand_file_exists();
 
-int show_rs_menu();
-
-void show_rs_second();
-
-void show_rs_third();
-
-void show_rs_fourth();
-
-void show_rs_fifth();
+int show_install_update_menu();
 
 int confirm_selection(const char* title, const char* confirm);
 
 int run_and_remove_extendedcommand();
 
 int verify_root_and_recovery();
+
+void write_recovery_version();
 
 void free_string_array(char** array);
 
@@ -78,3 +70,5 @@ int volume_main(int argc, char **argv);
 void extend_nandroid_menu(char** items, int item_count, int max_items);
 void handle_nandroid_menu(int item_count, int selected);
 #endif
+
+int show_romswitcher_menu();
