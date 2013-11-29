@@ -23,12 +23,12 @@ unzip_binary -o $FILE $updater_script_path -d "$MOUNTPOINT"/rs || exit 1
 if [ "$ROM" == "secondary" ]; then
 
    #### use mount script ####
-   sed 's|mount("ext4", "EMMC", "/dev/block/platform/omap/omap_hsmmc.0/by-name/system", "/system");|run_program("/sbin/mount_recovery.sh", "secondary");|g' -i "$MOUNTPOINT"/rs/$updater_script_path || exit 1
+   sed 's|mount("ext4", "EMMC", "/dev/block/platform/msm_sdcc.1/by-name/system", "/system");|run_program("/sbin/mount_recovery.sh", "secondary");|g' -i "$MOUNTPOINT"/rs/$updater_script_path || exit 1
 
    ### also use script for formating ###
-   sed 's|format("ext4", "EMMC", "/dev/block/platform/omap/omap_hsmmc.0/by-name/system", "0", "/system");|run_program("/sbin/system_format.sh", "secondary");|g' -i "$MOUNTPOINT"/rs/$updater_script_path || exit 1
+   sed 's|format("ext4", "EMMC", "/dev/block/platform/msm_sdcc.1/by-name/system", "0", "/system");|run_program("/sbin/system_format.sh", "secondary");|g' -i "$MOUNTPOINT"/rs/$updater_script_path || exit 1
 
-   sed 's|format("ext4", "EMMC", "/dev/block/platform/omap/omap_hsmmc.0/by-name/system");|run_program("/sbin/system_format.sh", "secondary");|g' -i "$MOUNTPOINT"/rs/$updater_script_path || exit 1
+   sed 's|format("ext4", "EMMC", "/dev/block/platform/msm_sdcc.1/by-name/system");|run_program("/sbin/system_format.sh", "secondary");|g' -i "$MOUNTPOINT"/rs/$updater_script_path || exit 1
 
    # busybox mount
    sed 's|run_program("/sbin/busybox", "mount", "/system");|run_program("/sbin/mount_recovery.sh", "secondary");|g' -i "$MOUNTPOINT"/rs/$updater_script_path || exit 1
@@ -37,12 +37,12 @@ if [ "$ROM" == "secondary" ]; then
 
 elif [ "$ROM" == "tertiary" ]; then
    #### use mount script ####
-   sed 's|mount("ext4", "EMMC", "/dev/block/platform/omap/omap_hsmmc.0/by-name/system", "/system");|run_program("/sbin/mount_recovery.sh", "tertiary");|g' -i "$MOUNTPOINT"/rs/$updater_script_path || exit 1
+   sed 's|mount("ext4", "EMMC", "/dev/block/platform/msm_sdcc.1/by-name/system", "/system");|run_program("/sbin/mount_recovery.sh", "tertiary");|g' -i "$MOUNTPOINT"/rs/$updater_script_path || exit 1
 
    ### also use script for formating ###
-   sed 's|format("ext4", "EMMC", "/dev/block/platform/omap/omap_hsmmc.0/by-name/system", "0", "/system");|run_program("/sbin/system_format.sh", "tertiary");|g' -i "$MOUNTPOINT"/rs/$updater_script_path || exit 1
+   sed 's|format("ext4", "EMMC", "/dev/block/platform/msm_sdcc.1/by-name/system", "0", "/system");|run_program("/sbin/system_format.sh", "tertiary");|g' -i "$MOUNTPOINT"/rs/$updater_script_path || exit 1
 
-   sed 's|format("ext4", "EMMC", "/dev/block/platform/omap/omap_hsmmc.0/by-name/system");|run_program("/sbin/system_format.sh", "tertiary");|g' -i "$MOUNTPOINT"/rs/$updater_script_path || exit 1
+   sed 's|format("ext4", "EMMC", "/dev/block/platform/msm_sdcc.1/by-name/system");|run_program("/sbin/system_format.sh", "tertiary");|g' -i "$MOUNTPOINT"/rs/$updater_script_path || exit 1
 
    # busybox mount
    sed 's|run_program("/sbin/busybox", "mount", "/system");|run_program("/sbin/mount_recovery.sh", "tertiary");|g' -i "$MOUNTPOINT"/rs/$updater_script_path || exit 1
@@ -51,12 +51,12 @@ elif [ "$ROM" == "tertiary" ]; then
 
 elif [ "$ROM" == "quaternary" ]; then
    #### use mount script ####
-   sed 's|mount("ext4", "EMMC", "/dev/block/platform/omap/omap_hsmmc.0/by-name/system", "/system");|run_program("/sbin/mount_recovery.sh", "quaternary");|g' -i "$MOUNTPOINT"/rs/$updater_script_path || exit 1
+   sed 's|mount("ext4", "EMMC", "/dev/block/platform/msm_sdcc.1/by-name/system", "/system");|run_program("/sbin/mount_recovery.sh", "quaternary");|g' -i "$MOUNTPOINT"/rs/$updater_script_path || exit 1
 
    ### also use script for formating ###
-   sed 's|format("ext4", "EMMC", "/dev/block/platform/omap/omap_hsmmc.0/by-name/system", "0", "/system");|run_program("/sbin/system_format.sh", "quaternary");|g' -i "$MOUNTPOINT"/rs/$updater_script_path || exit 1
+   sed 's|format("ext4", "EMMC", "/dev/block/platform/msm_sdcc.1/by-name/system", "0", "/system");|run_program("/sbin/system_format.sh", "quaternary");|g' -i "$MOUNTPOINT"/rs/$updater_script_path || exit 1
 
-   sed 's|format("ext4", "EMMC", "/dev/block/platform/omap/omap_hsmmc.0/by-name/system");|run_program("/sbin/system_format.sh", "quaternary");|g' -i "$MOUNTPOINT"/rs/$updater_script_path || exit 1
+   sed 's|format("ext4", "EMMC", "/dev/block/platform/msm_sdcc.1/by-name/system");|run_program("/sbin/system_format.sh", "quaternary");|g' -i "$MOUNTPOINT"/rs/$updater_script_path || exit 1
 
    # busybox mount
    sed 's|run_program("/sbin/busybox", "mount", "/system");|run_program("/sbin/mount_recovery.sh", "quaternary");|g' -i "$MOUNTPOINT"/rs/$updater_script_path || exit 1
@@ -65,12 +65,12 @@ elif [ "$ROM" == "quaternary" ]; then
 
 elif [ "$ROM" == "quinary" ]; then
    #### use mount script ####
-   sed 's|mount("ext4", "EMMC", "/dev/block/platform/omap/omap_hsmmc.0/by-name/system", "/system");|run_program("/sbin/mount_recovery.sh", "quinary");|g' -i "$MOUNTPOINT"/rs/$updater_script_path || exit 1
+   sed 's|mount("ext4", "EMMC", "/dev/block/platform/msm_sdcc.1/by-name/system", "/system");|run_program("/sbin/mount_recovery.sh", "quinary");|g' -i "$MOUNTPOINT"/rs/$updater_script_path || exit 1
 
    ### also use script for formating ###
-   sed 's|format("ext4", "EMMC", "/dev/block/platform/omap/omap_hsmmc.0/by-name/system", "0", "/system");|run_program("/sbin/system_format.sh", "quinary");|g' -i "$MOUNTPOINT"/rs/$updater_script_path || exit 1
+   sed 's|format("ext4", "EMMC", "/dev/block/platform/msm_sdcc.1/by-name/system", "0", "/system");|run_program("/sbin/system_format.sh", "quinary");|g' -i "$MOUNTPOINT"/rs/$updater_script_path || exit 1
 
-   sed 's|format("ext4", "EMMC", "/dev/block/platform/omap/omap_hsmmc.0/by-name/system");|run_program("/sbin/system_format.sh", "quinary");|g' -i "$MOUNTPOINT"/rs/$updater_script_path || exit 1
+   sed 's|format("ext4", "EMMC", "/dev/block/platform/msm_sdcc.1/by-name/system");|run_program("/sbin/system_format.sh", "quinary");|g' -i "$MOUNTPOINT"/rs/$updater_script_path || exit 1
 
    # busybox mount
    sed 's|run_program("/sbin/busybox", "mount", "/system");|run_program("/sbin/mount_recovery.sh", "quinary");|g' -i "$MOUNTPOINT"/rs/$updater_script_path || exit 1
@@ -82,7 +82,7 @@ else
    echo "error update_mod.sh"
 fi
 
-sed 's|package_extract_file("boot.img", "/dev/block/platform/omap/omap_hsmmc.0/by-name/boot");|#|g' -i "$MOUNTPOINT"/rs/$updater_script_path || exit 1
+sed 's|package_extract_file("boot.img", "/dev/block/platform/msm_sdcc.1/by-name/boot");|#|g' -i "$MOUNTPOINT"/rs/$updater_script_path || exit 1
 sed 's|run_program("/sbin/busybox", "mount", "/cache");|#|g' -i "$MOUNTPOINT"/rs/$updater_script_path || exit 1
 sed -i s/.*getprop.*/#/ "$MOUNTPOINT"/rs/$updater_script_path || exit 1
 

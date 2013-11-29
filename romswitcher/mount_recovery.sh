@@ -8,7 +8,7 @@ BB="busybox"
 MOUNT="busybox mount"
 UMOUNT="busybox umount -f"
 
-OMAP=platform/omap/omap_hsmmc.0/by-name
+OMAP=platform/msm_sdcc.1/by-name
 BLOCKDEVICE=$OMAP/userdata #data
 CACHEPARTITION=$OMAP/cache #cache
 SYSTEMPARTITION=$OMAP/system #system
