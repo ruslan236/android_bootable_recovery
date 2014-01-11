@@ -84,7 +84,6 @@ fi
 
 sed 's|package_extract_file("boot.img", "/dev/block/platform/msm_sdcc.1/by-name/boot");|#|g' -i "$MOUNTPOINT"/rs/$updater_script_path || exit 1
 sed 's|run_program("/sbin/busybox", "mount", "/cache");|#|g' -i "$MOUNTPOINT"/rs/$updater_script_path || exit 1
-sed -i s/.*getprop.*/#/ "$MOUNTPOINT"/rs/$updater_script_path || exit 1
 
 cp -f $FILE $MOUNTPOINT/rs
 cd $MOUNTPOINT/rs

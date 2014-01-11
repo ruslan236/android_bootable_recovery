@@ -1849,34 +1849,43 @@ int show_romswitcher_menu()
 
 //Second Rom
 
-#define ITEM_ZIP_RS_INT 0
-#define ITEM_REMOVE_RS 1
-#define ITEM_WIPE_DATA_RS 2
-#define ITEM_WIPE_CACHE_RS 3
+#define ITEM_REMOVE_RS        0
+#define ITEM_WIPE_DATA_RS     1
+#define ITEM_WIPE_CACHE_RS    2
+#define ITEM_ZIP_RS_INT       3
+#define ITEM_ZIP_RS_EXT       4
 
 void show_rs_second()
 {
     char buf[100];
     int i = 0, chosen_item = 0;
-    static char* install_menu_items[MAX_NUM_MANAGED_VOLUMES + 3];
-
+    static char* install_menu_items[MAX_NUM_MANAGED_VOLUMES + 4];
+    
     char* primary_path = get_primary_storage_path();
-
-    memset(install_menu_items, 0, MAX_NUM_MANAGED_VOLUMES + 3);
-
-    static const char* headers[] = { "RomSwitcher Second - Menu",
-                                "",
-                                NULL
+    char** extra_paths = get_extra_storage_paths();
+    int num_extra_volumes = get_num_extra_volumes();
+    
+    memset(install_menu_items, 0, MAX_NUM_MANAGED_VOLUMES + 4);
+    
+    static const char* headers[] = {  "RomSwitcher Second - Menu",
+        "",
+        NULL
     };
-
-    install_menu_items[0] = "install ZIP to 2ndROM from internal SD";
-
-    install_menu_items[1] = "remove 2ndROM";
-
-    install_menu_items[2] = "wipe data of 2ndROM";
-
-    install_menu_items[3] = "wipe cache of 2ndROM";
-
+    
+    install_menu_items[0] = "remove 2ndROM";
+    
+    install_menu_items[1] = "wipe data of 2ndROM";
+    
+    install_menu_items[2] = "wipe cache of 2ndROM";
+    
+    install_menu_items[3] = "install ZIP to 2ndROM from internal SD";
+    
+    install_menu_items[4 + num_extra_volumes] = NULL;
+    
+    for (i = 0; i < num_extra_volumes; i++) {
+        install_menu_items[4 + i] = "install ZIP to 2ndROM from external SD";
+    }
+    
     for (;;)
     {
         chosen_item = get_menu_selection(headers, install_menu_items, 0, 0);
@@ -1884,9 +1893,6 @@ void show_rs_second()
             break;
         switch (chosen_item)
         {
-            case ITEM_ZIP_RS_INT:
-                show_choose_zip_menu_second(primary_path);
-                break;
             case ITEM_REMOVE_RS:
                 if (confirm_selection( "Confirm remove?", "Yes - Remove 2ndROM")) {
                     __system("rm -rf /data/media/.secondrom");
@@ -1909,6 +1915,12 @@ void show_rs_second()
                     ui_print("Cache of 2ndROM wiped.\n");
                 }
                 ensure_path_unmounted("/data");
+                break;
+            case ITEM_ZIP_RS_INT:
+                show_choose_zip_menu_second(primary_path);
+                break;
+            case ITEM_ZIP_RS_EXT:
+                show_choose_zip_menu_second(extra_paths[chosen_item - 4]);
                 break;
             default:
                 break;
@@ -1966,24 +1978,32 @@ void show_rs_third()
 {
     char buf[100];
     int i = 0, chosen_item = 0;
-    static char* install_menu_items[MAX_NUM_MANAGED_VOLUMES + 3];
+    static char* install_menu_items[MAX_NUM_MANAGED_VOLUMES + 4];
     
     char* primary_path = get_primary_storage_path();
+    char** extra_paths = get_extra_storage_paths();
+    int num_extra_volumes = get_num_extra_volumes();
     
-    memset(install_menu_items, 0, MAX_NUM_MANAGED_VOLUMES + 3);
+    memset(install_menu_items, 0, MAX_NUM_MANAGED_VOLUMES + 4);
     
-    static const char* headers[] = { "RomSwitcher Third - Menu",
+    static const char* headers[] = {  "RomSwitcher Third - Menu",
         "",
         NULL
     };
     
-    install_menu_items[0] = "install ZIP to 3rdROM from internal SD";
+    install_menu_items[0] = "remove 3rdROM";
     
-    install_menu_items[1] = "remove 3rdROM";
+    install_menu_items[1] = "wipe data of 3rdROM";
     
-    install_menu_items[2] = "wipe data of 3rdROM";
+    install_menu_items[2] = "wipe cache of 3rdROM";
     
-    install_menu_items[3] = "wipe cache of 3rdROM";
+    install_menu_items[3] = "install ZIP to 3rdROM from internal SD";
+    
+    install_menu_items[4 + num_extra_volumes] = NULL;
+    
+    for (i = 0; i < num_extra_volumes; i++) {
+        install_menu_items[4 + i] = "install ZIP to 3rdROM from external SD";
+    }
     
     for (;;)
     {
@@ -1992,9 +2012,6 @@ void show_rs_third()
             break;
         switch (chosen_item)
         {
-            case ITEM_ZIP_RS_INT:
-                show_choose_zip_menu_third(primary_path);
-                break;
             case ITEM_REMOVE_RS:
                 if (confirm_selection( "Confirm remove?", "Yes - Remove 3rdROM")) {
                     __system("rm -rf /data/media/.thirdrom");
@@ -2017,6 +2034,12 @@ void show_rs_third()
                     ui_print("Cache of 3rdROM wiped.\n");
                 }
                 ensure_path_unmounted("/data");
+                break;
+            case ITEM_ZIP_RS_INT:
+                show_choose_zip_menu_third(primary_path);
+                break;
+            case ITEM_ZIP_RS_EXT:
+                show_choose_zip_menu_third(extra_paths[chosen_item - 4]);
                 break;
             default:
                 break;
@@ -2067,31 +2090,40 @@ void show_choose_zip_menu_third(const char *mount_point)
         __system("/sbin/mount_recovery.sh primary");
     }
 }
-//fourth Rom
+
+// Fourth Rom
 
 void show_rs_fourth()
 {
     char buf[100];
     int i = 0, chosen_item = 0;
-    static char* install_menu_items[MAX_NUM_MANAGED_VOLUMES + 3];
-
+    static char* install_menu_items[MAX_NUM_MANAGED_VOLUMES + 4];
+    
     char* primary_path = get_primary_storage_path();
-
-    memset(install_menu_items, 0, MAX_NUM_MANAGED_VOLUMES + 3);
-
-    static const char* headers[] = { "RomSwitcher Fourth - Menu",
+    char** extra_paths = get_extra_storage_paths();
+    int num_extra_volumes = get_num_extra_volumes();
+    
+    memset(install_menu_items, 0, MAX_NUM_MANAGED_VOLUMES + 4);
+    
+    static const char* headers[] = {  "RomSwitcher Fourth - Menu",
         "",
         NULL
     };
-
-    install_menu_items[0] = "install ZIP to 4thROM from internal SD";
-
-    install_menu_items[1] = "remove 4thROM";
-
-    install_menu_items[2] = "wipe data of 4thROM";
-
-    install_menu_items[3] = "wipe cache of 4thROM";
-
+    
+    install_menu_items[0] = "remove 4thROM";
+    
+    install_menu_items[1] = "wipe data of 4thROM";
+    
+    install_menu_items[2] = "wipe cache of 4thROM";
+    
+    install_menu_items[3] = "install ZIP to 4thROM from internal SD";
+    
+    install_menu_items[4 + num_extra_volumes] = NULL;
+    
+    for (i = 0; i < num_extra_volumes; i++) {
+        install_menu_items[4 + i] = "install ZIP to 4thROM from external SD";
+    }
+    
     for (;;)
     {
         chosen_item = get_menu_selection(headers, install_menu_items, 0, 0);
@@ -2099,9 +2131,6 @@ void show_rs_fourth()
             break;
         switch (chosen_item)
         {
-            case ITEM_ZIP_RS_INT:
-                show_choose_zip_menu_fourth(primary_path);
-                break;
             case ITEM_REMOVE_RS:
                 if (confirm_selection( "Confirm remove?", "Yes - Remove 4thROM")) {
                     __system("rm -rf /data/media/.fourthrom");
@@ -2124,6 +2153,12 @@ void show_rs_fourth()
                     ui_print("Cache of 4thROM wiped.\n");
                 }
                 ensure_path_unmounted("/data");
+                break;
+            case ITEM_ZIP_RS_INT:
+                show_choose_zip_menu_fourth(primary_path);
+                break;
+            case ITEM_ZIP_RS_EXT:
+                show_choose_zip_menu_fourth(extra_paths[chosen_item - 4]);
                 break;
             default:
                 break;
@@ -2174,31 +2209,39 @@ void show_choose_zip_menu_fourth(const char *mount_point)
         __system("/sbin/mount_recovery.sh primary");
     }
 }
-//fifth Rom
+// Fifth Rom
 
 void show_rs_fifth()
 {
     char buf[100];
     int i = 0, chosen_item = 0;
-    static char* install_menu_items[MAX_NUM_MANAGED_VOLUMES + 3];
-
+    static char* install_menu_items[MAX_NUM_MANAGED_VOLUMES + 4];
+    
     char* primary_path = get_primary_storage_path();
-
-    memset(install_menu_items, 0, MAX_NUM_MANAGED_VOLUMES + 3);
-
-    static const char* headers[] = { "RomSwitcher Fifth - Menu",
+    char** extra_paths = get_extra_storage_paths();
+    int num_extra_volumes = get_num_extra_volumes();
+    
+    memset(install_menu_items, 0, MAX_NUM_MANAGED_VOLUMES + 4);
+    
+    static const char* headers[] = {  "RomSwitcher Fifth - Menu",
         "",
         NULL
     };
-
-    install_menu_items[0] = "install ZIP to 5thROM from internal SD";
-
-    install_menu_items[1] = "remove 5thROM";
-
-    install_menu_items[2] = "wipe data of 5thROM";
-
-    install_menu_items[3] = "wipe cache of 5thROM";
-
+    
+    install_menu_items[0] = "remove 5thROM";
+    
+    install_menu_items[1] = "wipe data of 5thROM";
+    
+    install_menu_items[2] = "wipe cache of 5thROM";
+    
+    install_menu_items[3] = "install ZIP to 5thROM from internal SD";
+    
+    install_menu_items[4 + num_extra_volumes] = NULL;
+    
+    for (i = 0; i < num_extra_volumes; i++) {
+        install_menu_items[4 + i] = "install ZIP to 5thROM from external SD";
+    }
+    
     for (;;)
     {
         chosen_item = get_menu_selection(headers, install_menu_items, 0, 0);
@@ -2206,10 +2249,6 @@ void show_rs_fifth()
             break;
         switch (chosen_item)
         {
-            case ITEM_ZIP_RS_INT:
-                show_choose_zip_menu_fifth(primary_path);
-                write_recovery_version();
-                break;
             case ITEM_REMOVE_RS:
                 if (confirm_selection( "Confirm remove?", "Yes - Remove 5thROM")) {
                     __system("rm -rf /data/media/.fifthrom");
@@ -2232,6 +2271,12 @@ void show_rs_fifth()
                     ui_print("Cache of 5thROM wiped.\n");
                 }
                 ensure_path_unmounted("/data");
+                break;
+            case ITEM_ZIP_RS_INT:
+                show_choose_zip_menu_fifth(primary_path);
+                break;
+            case ITEM_ZIP_RS_EXT:
+                show_choose_zip_menu_fifth(extra_paths[chosen_item - 4]);
                 break;
             default:
                 break;
